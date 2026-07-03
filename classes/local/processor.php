@@ -25,15 +25,20 @@
 namespace local_cohortmembership\local;
 
 /**
- * Service class: processes username + cohort mappings and removes memberships.
+ * Service class: resolves username + cohort mappings and dispatches each row
+ * to the operation (add/del/sync) handler.
  */
 class processor {
     /**
      * Process rows and return results and counters.
      *
-     * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null]
+     * A CSV without an 'operation' column is treated as legacy: every row is
+     * processed as 'del' (status quo of the old cohortunenroller plugin).
+     *
+     * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
+     *                            'operation' => string|null]
      * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
-     * @return array ['results' => array, 'counters' => array]
+     * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool]
      */
     public static function process(array $rows, array $options = []): array {
         global $DB, $CFG;
@@ -41,6 +46,15 @@ class processor {
 
         $standardise = !empty($options['standardise']);
         $dryrun      = !empty($options['dryrun']);
+
+        // No row carries an 'operation' key at all -> legacy CSV, treat everything as 'del'.
+        $legacyformat = true;
+        foreach ($rows as $r) {
+            if (array_key_exists('operation', $r)) {
+                $legacyformat = false;
+                break;
+            }
+        }
 
         $seenpairs = [];
         $results   = [];
@@ -58,21 +72,22 @@ class processor {
             }
             $cohortid       = $r['cohortid'] ?? null;
             $cohortidnumber = isset($r['cohortidnumber']) ? trim((string)$r['cohortidnumber']) : null;
+            $operation      = $legacyformat ? 'del' : \core_text::strtolower(trim((string)($r['operation'] ?? '')));
 
             // Basic validation.
             if ($username === '' || ($cohortid === null && ($cohortidnumber === null || $cohortidnumber === ''))) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'status' => 'status_invalid'];
+                    'operation' => $operation, 'status' => 'status_invalid'];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
             }
 
-            // De-duplicate within this run.
-            $pairkey = $username . '|' . ($cohortid !== null ? ('id:' . $cohortid) : ('idn:' . $cohortidnumber));
+            // De-duplicate within this run (same operation + same username/cohort pair).
+            $pairkey = $operation . '|' . $username . '|' . ($cohortid !== null ? ('id:' . $cohortid) : ('idn:' . $cohortidnumber));
             if (isset($seenpairs[$pairkey])) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'status' => 'status_duplicate'];
+                    'operation' => $operation, 'status' => 'status_duplicate'];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -83,7 +98,7 @@ class processor {
             $user = $DB->get_record('user', ['username' => $username, 'deleted' => 0], 'id', IGNORE_MISSING);
             if (!$user) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'status' => 'status_usernotfound'];
+                    'operation' => $operation, 'status' => 'status_usernotfound'];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -97,37 +112,41 @@ class processor {
             }
             if (!$cohort) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'status' => 'status_cohortnotfound'];
+                    'operation' => $operation, 'status' => 'status_cohortnotfound'];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
             }
 
-            // Membership check.
-            $ismember = $DB->record_exists('cohort_members', ['cohortid' => $cohort->id, 'userid' => $user->id]);
-            if (!$ismember) {
-                $results[] = ['username' => $username, 'cohortid' => $cohort->id, 'cohortidnumber' => $cohortidnumber ?? '',
-                    'status' => 'status_notmember'];
-                $counters['valid']++;
-                $counters['skipped']++;
-                continue;
-            }
-
-            // Remove membership (if not a dry run).
-            if (!$dryrun) {
-                cohort_remove_member($cohort->id, $user->id);
+            // Dispatch to the operation handler.
+            switch ($operation) {
+                case 'del':
+                    $opresult = operation_del::execute($cohort->id, $user->id, $dryrun);
+                    break;
+                default:
+                    $opresult = ['status' => 'error_bad_operation'];
             }
 
             $results[] = ['username' => $username, 'cohortid' => $cohort->id, 'cohortidnumber' => $cohortidnumber ?? '',
-                'status' => 'status_removed'];
-            $counters['valid']++;
-            $counters['processed']++;
+                'operation' => $operation, 'status' => $opresult['status']];
+
+            if ($opresult['status'] === 'status_removed') {
+                $counters['valid']++;
+                $counters['processed']++;
+            } else if ($opresult['status'] === 'status_notmember') {
+                $counters['valid']++;
+                $counters['skipped']++;
+            } else {
+                // error_bad_operation and any future unhandled status.
+                $counters['errors']++;
+                $counters['skipped']++;
+            }
         }
 
         if (!$dryrun) {
             $transaction->allow_commit();
         }
 
-        return ['results' => $results, 'counters' => $counters];
+        return ['results' => $results, 'counters' => $counters, 'legacy_format' => $legacyformat];
     }
 }
