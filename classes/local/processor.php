@@ -123,6 +123,9 @@ class processor {
                 case 'del':
                     $opresult = operation_del::execute($cohort->id, $user->id, $dryrun);
                     break;
+                case 'add':
+                    $opresult = operation_add::execute($cohort->id, $user->id, $dryrun);
+                    break;
                 default:
                     $opresult = ['status' => 'error_bad_operation'];
             }
@@ -130,10 +133,10 @@ class processor {
             $results[] = ['username' => $username, 'cohortid' => $cohort->id, 'cohortidnumber' => $cohortidnumber ?? '',
                 'operation' => $operation, 'status' => $opresult['status']];
 
-            if ($opresult['status'] === 'status_removed') {
+            if (in_array($opresult['status'], ['status_removed', 'status_added'], true)) {
                 $counters['valid']++;
                 $counters['processed']++;
-            } else if ($opresult['status'] === 'status_notmember') {
+            } else if (in_array($opresult['status'], ['status_notmember', 'status_alreadymember'], true)) {
                 $counters['valid']++;
                 $counters['skipped']++;
             } else {
