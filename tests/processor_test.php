@@ -33,7 +33,7 @@ final class processor_test extends \advanced_testcase {
     /**
      * Test that removes members and skips non-members.
      *
-     * @covers \local_cohortmembership\local\privacy\processor::process
+     * @covers \local_cohortmembership\local\processor::process
      * @return void
      */
     public function test_removes_members_and_skips_nonmembers(): void {
