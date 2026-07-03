@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['cohortmembership:manage'] = 'Manage cohort memberships (add/remove/sync via CSV)';
 $string['csvhelp'] = 'CSV headers: username,cohortid OR username,cohortidnumber.';
 $string['download'] = 'Download CSV';
 $string['dryrun'] = 'Dry run (no changes)';

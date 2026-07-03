@@ -35,6 +35,6 @@ class provider implements \core_privacy\local\metadata\null_provider {
      * @throws \coding_exception
      */
     public static function get_reason(): string {
-        return get_string('privacy:metadata', 'local_cohortmembership');
+        return 'privacy:metadata';
     }
 }
