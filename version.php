@@ -17,15 +17,15 @@
 /**
  * Version file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_cohortunenroller';
-$plugin->version   = 2025090203;   // YYYYMMDDXX.
+$plugin->component = 'local_cohortmembership';
+$plugin->version   = 2026070300;   // YYYYMMDDXX.
 $plugin->requires  = 2024052000;   // Moodle 4.5.
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.4.2';
+$plugin->release   = '0.5.0';

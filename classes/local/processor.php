@@ -17,12 +17,12 @@
 /**
  * Processor file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_cohortunenroller\local;
+namespace local_cohortmembership\local;
 
 /**
  * Service class: processes username + cohort mappings and removes memberships.

@@ -17,7 +17,7 @@
 /**
  * CLI script to remove users from cohorts by CSV mapping.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -29,7 +29,7 @@ require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->libdir . '/csvlib.class.php');
 require_once($CFG->dirroot . '/cohort/lib.php');
 
-use local_cohortunenroller\local\processor;
+use local_cohortmembership\local\processor;
 
 // Parse CLI options.
 list($options, $unrecognized) = cli_get_params(
@@ -62,8 +62,8 @@ CSV headers (one of):
   username,cohortidnumber
 
 Examples:
-  php local/cohortunenroller/cli/unenrol.php --csv=/data/in.csv --dry-run --delimiter=tab
-  php local/cohortunenroller/cli/unenrol.php --csv=/data/in.csv --report=/data/out.csv --delimiter=semicolon
+  php local/cohortmembership/cli/unenrol.php --csv=/data/in.csv --dry-run --delimiter=tab
+  php local/cohortmembership/cli/unenrol.php --csv=/data/in.csv --report=/data/out.csv --delimiter=semicolon
 ";
 
 if (!empty($options['help'])) {
@@ -100,8 +100,8 @@ if ($content === false || $content === '') {
 }
 
 // Initialise CSV reader.
-$iid = csv_import_reader::get_new_iid('local_cohortunenroller_cli');
-$cir = new csv_import_reader($iid, 'local_cohortunenroller_cli');
+$iid = csv_import_reader::get_new_iid('local_cohortmembership_cli');
+$cir = new csv_import_reader($iid, 'local_cohortmembership_cli');
 
 $encoding = 'utf-8';
 $cir->load_csv_content($content, $encoding, $delimiter);

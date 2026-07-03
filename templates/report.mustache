@@ -1,5 +1,5 @@
 {{!
-    @template cohortunentoller/report
+    @template local_cohortmembership/report
 
     Example context (json):
     {
@@ -12,14 +12,14 @@
         }
     }
 }}
-<div class="local-cohortunenroller-report">
-  <h4>{{#str}} summary, local_cohortunenroller {{/str}}</h4>
+<div class="local-cohortmembership-report">
+  <h4>{{#str}} summary, local_cohortmembership {{/str}}</h4>
   <ul>
-    <li>{{#str}} rows_total, local_cohortunenroller {{/str}}: {{counters.total}}</li>
-    <li>{{#str}} rows_valid, local_cohortunenroller {{/str}}: {{counters.valid}}</li>
-    <li>{{#str}} rows_processed, local_cohortunenroller {{/str}}: {{counters.processed}}</li>
-    <li>{{#str}} rows_skipped, local_cohortunenroller {{/str}}: {{counters.skipped}}</li>
-    <li>{{#str}} rows_errors, local_cohortunenroller {{/str}}: {{counters.errors}}</li>
+    <li>{{#str}} rows_total, local_cohortmembership {{/str}}: {{counters.total}}</li>
+    <li>{{#str}} rows_valid, local_cohortmembership {{/str}}: {{counters.valid}}</li>
+    <li>{{#str}} rows_processed, local_cohortmembership {{/str}}: {{counters.processed}}</li>
+    <li>{{#str}} rows_skipped, local_cohortmembership {{/str}}: {{counters.skipped}}</li>
+    <li>{{#str}} rows_errors, local_cohortmembership {{/str}}: {{counters.errors}}</li>
   </ul>
 
   <table class="generaltable">

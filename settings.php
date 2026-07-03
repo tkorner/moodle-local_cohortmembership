@@ -17,7 +17,7 @@
 /**
  * Settings file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,9 +26,9 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
     $settings = new admin_externalpage(
-        'local_cohortunenroller',
-        get_string('pluginname', 'local_cohortunenroller'),
-        new moodle_url('/local/cohortunenroller/index.php')
+        'local_cohortmembership',
+        get_string('pluginname', 'local_cohortmembership'),
+        new moodle_url('/local/cohortmembership/index.php')
     );
     $ADMIN->add('localplugins', $settings);
 }

@@ -17,15 +17,15 @@
 /**
  * Renderer file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_cohortunenroller\output;
+namespace local_cohortmembership\output;
 
 /**
- * Plugin renderer for local_cohortunenroller.
+ * Plugin renderer for local_cohortmembership.
  */
 class renderer extends \plugin_renderer_base {
     /**
@@ -36,6 +36,6 @@ class renderer extends \plugin_renderer_base {
      * @throws \core\exception\moodle_exception
      */
     public function report(report $report): string {
-        return $this->render_from_template('local_cohortunenroller/report', $report->export_for_template($this));
+        return $this->render_from_template('local_cohortmembership/report', $report->export_for_template($this));
     }
 }

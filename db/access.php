@@ -15,13 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capabilities for local_cohortunenroller plugin.
+ * Capabilities for local_cohortmembership plugin.
  *
- * Defines the custom capability 'local/cohortunenroller:run'.
+ * Defines the custom capability 'local/cohortmembership:manage'.
  * This allows controlling which roles are permitted to run the plugin.
  * By default, the Manager role is granted this capability.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -29,7 +29,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    'local/cohortunenroller:run' => [
+    'local/cohortmembership:manage' => [
         'riskbitmask'  => RISK_XSS,
         'captype'      => 'write',
         'contextlevel' => CONTEXT_SYSTEM,

@@ -1,0 +1,7 @@
+operation,username,cohortidnumber
+add,hans.muster.zhaw,kurs-inf-2026
+add,anna.beispiel.zhaw,kurs-inf-2026
+del,hans.muster.zhaw,kurs-inf-2023
+del,anna.beispiel.zhaw,kurs-inf-2023
+add,peter.roth.zhaw,basis-alle
+del,peter.roth.zhaw,kurs-bwl-2022

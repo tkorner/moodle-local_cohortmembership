@@ -17,15 +17,15 @@
 /**
  * Privacy provider file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_cohortunenroller\privacy;
+namespace local_cohortmembership\privacy;
 
 /**
- * Privacy provider for local_cohortunenroller.
+ * Privacy provider for local_cohortmembership.
  */
 class provider implements \core_privacy\local\metadata\null_provider {
     /**
@@ -35,6 +35,6 @@ class provider implements \core_privacy\local\metadata\null_provider {
      * @throws \coding_exception
      */
     public static function get_reason(): string {
-        return get_string('privacy:metadata', 'local_cohortunenroller');
+        return get_string('privacy:metadata', 'local_cohortmembership');
     }
 }

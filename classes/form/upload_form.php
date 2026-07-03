@@ -17,12 +17,12 @@
 /**
  * Upload form file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace local_cohortunenroller\form;
+namespace local_cohortmembership\form;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -46,14 +46,14 @@ class upload_form extends \moodleform {
         $mform->addElement(
             'filepicker',
             'csvfile',
-            get_string('uploadcsv', 'local_cohortunenroller'),
+            get_string('uploadcsv', 'local_cohortmembership'),
             null,
             ['maxbytes' => 0, 'accepted_types' => ['.csv']]
         );
         $mform->addRule('csvfile', null, 'required', null, 'client');
 
         // Help text.
-        $mform->addElement('static', 'csvhelp', '', get_string('csvhelp', 'local_cohortunenroller'));
+        $mform->addElement('static', 'csvhelp', '', get_string('csvhelp', 'local_cohortmembership'));
 
         // CSV delimiter (same as core "Upload users").
         $mform->addElement(
@@ -65,12 +65,12 @@ class upload_form extends \moodleform {
         $mform->setDefault('delimiter', 'comma');
 
         // Username normalisation (trim + lowercase).
-        $mform->addElement('advcheckbox', 'standardise', get_string('standardise_usernames', 'local_cohortunenroller'), '');
+        $mform->addElement('advcheckbox', 'standardise', get_string('standardise_usernames', 'local_cohortmembership'), '');
 
         // Dry run (no DB changes).
-        $mform->addElement('advcheckbox', 'dryrun', get_string('dryrun', 'local_cohortunenroller'), '');
+        $mform->addElement('advcheckbox', 'dryrun', get_string('dryrun', 'local_cohortmembership'), '');
 
         // Submit.
-        $mform->addElement('submit', 'submitbutton', get_string('submit', 'local_cohortunenroller'));
+        $mform->addElement('submit', 'submitbutton', get_string('submit', 'local_cohortmembership'));
     }
 }

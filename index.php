@@ -17,7 +17,7 @@
 /**
  * Index file.
  *
- * @package   local_cohortunenroller
+ * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,13 +28,13 @@ require_login();
 $context = context_system::instance();
 
 // Page access capability (plugin) + cohort assignment capability (core).
-require_capability('local/cohortunenroller:run', $context);
+require_capability('local/cohortmembership:manage', $context);
 require_capability('moodle/cohort:assign', $context);
 
-$PAGE->set_url(new moodle_url('/local/cohortunenroller/index.php'));
+$PAGE->set_url(new moodle_url('/local/cohortmembership/index.php'));
 $PAGE->set_context($context);
-$PAGE->set_title(get_string('pluginname', 'local_cohortunenroller'));
-$PAGE->set_heading(get_string('pageheading', 'local_cohortunenroller'));
+$PAGE->set_title(get_string('pluginname', 'local_cohortmembership'));
+$PAGE->set_heading(get_string('pageheading', 'local_cohortmembership'));
 
 echo $OUTPUT->header();
 
@@ -43,15 +43,15 @@ require_once($CFG->libdir . '/csvlib.class.php');
 require_once($CFG->dirroot . '/cohort/lib.php');
 
 // Load the upload form (namespaced moodleform subclass).
-$mform = new \local_cohortunenroller\form\upload_form();
+$mform = new \local_cohortmembership\form\upload_form();
 
 // Handle secure CSV download of the last run's results (stored in session).
 $download = optional_param('download', 0, PARAM_BOOL);
 if ($download) {
     require_sesskey(); // CSRF protection for the download action.
 
-    if (!empty($SESSION->local_cohortunenroller_report)) {
-        $rows = $SESSION->local_cohortunenroller_report['rows'] ?? [];
+    if (!empty($SESSION->local_cohortmembership_report)) {
+        $rows = $SESSION->local_cohortmembership_report['rows'] ?? [];
         $export = new csv_export_writer();
         $export->set_filename('cohort_unenroller_results');
         $export->add_data(['username', 'cohortid', 'cohortidnumber', 'status']);
@@ -79,15 +79,15 @@ if ($mform->is_cancelled()) {
     // Read uploaded CSV content.
     $filecontent = $mform->get_file_content('csvfile');
     if (!$filecontent) {
-        echo $OUTPUT->notification(get_string('error_nofile', 'local_cohortunenroller'), 'error');
+        echo $OUTPUT->notification(get_string('error_nofile', 'local_cohortmembership'), 'error');
         $mform->display();
         echo $OUTPUT->footer();
         exit;
     }
 
     // Prepare CSV reader.
-    $iid = csv_import_reader::get_new_iid('local_cohortunenroller');
-    $cir = new csv_import_reader($iid, 'local_cohortunenroller');
+    $iid = csv_import_reader::get_new_iid('local_cohortmembership');
+    $cir = new csv_import_reader($iid, 'local_cohortmembership');
 
     $encoding = 'utf-8';
     $delimiter = $data->delimiter ?? 'comma'; // Choices 'comma'|'semicolon'|'tab' as provided by core.
@@ -101,7 +101,7 @@ if ($mform->is_cancelled()) {
     $hasid = in_array('cohortid', $columns, true);
     $hasidnumber = in_array('cohortidnumber', $columns, true);
     if (!in_array('username', $columns, true) || (!$hasid && !$hasidnumber)) {
-        echo $OUTPUT->notification(get_string('error_headers', 'local_cohortunenroller'), 'error');
+        echo $OUTPUT->notification(get_string('error_headers', 'local_cohortmembership'), 'error');
         $cir->close();
         $cir->cleanup();
         $mform->display();
@@ -135,7 +135,7 @@ if ($mform->is_cancelled()) {
     $cir->cleanup();
 
     // Execute business logic via the service class (unit-testable).
-    $payload = \local_cohortunenroller\local\processor::process($rows, [
+    $payload = \local_cohortmembership\local\processor::process($rows, [
         'standardise' => $standardise,
         'dryrun' => $dryrun,
     ]);
@@ -145,7 +145,7 @@ if ($mform->is_cancelled()) {
 
     // Human-readable status strings and minimal sanitising before templating.
     foreach ($results as &$r) {
-        $r['status_readable'] = get_string($r['status'], 'local_cohortunenroller');
+        $r['status_readable'] = get_string($r['status'], 'local_cohortmembership');
         // Mustache escapes by default; preparing strings defensively is fine.
         $r['username'] = $r['username'] ?? '';
         $r['cohortid'] = isset($r['cohortid']) ? (string)$r['cohortid'] : '';
@@ -153,25 +153,25 @@ if ($mform->is_cancelled()) {
     }
 
     // Persist for CSV download.
-    $SESSION->local_cohortunenroller_report = ['rows' => $results, 'counters' => $counters];
+    $SESSION->local_cohortmembership_report = ['rows' => $results, 'counters' => $counters];
 
     // Informational notice for dry run.
     if ($dryrun) {
-        echo $OUTPUT->notification(get_string('dryrun_notice', 'local_cohortunenroller'), 'info');
+        echo $OUTPUT->notification(get_string('dryrun_notice', 'local_cohortmembership'), 'info');
     }
 
     // Render the summary + table via plugin renderer and Mustache template.
-    $renderer = $PAGE->get_renderer('local_cohortunenroller');
-    echo $renderer->report(new \local_cohortunenroller\output\report($results, $counters));
+    $renderer = $PAGE->get_renderer('local_cohortmembership');
+    echo $renderer->report(new \local_cohortmembership\output\report($results, $counters));
 
     // Download button (protected by sesskey) and back-to-upload button.
-    $dlurl = new moodle_url('/local/cohortunenroller/index.php', ['download' => 1, 'sesskey' => sesskey()]);
-    echo $OUTPUT->single_button($dlurl, get_string('download', 'local_cohortunenroller'));
+    $dlurl = new moodle_url('/local/cohortmembership/index.php', ['download' => 1, 'sesskey' => sesskey()]);
+    echo $OUTPUT->single_button($dlurl, get_string('download', 'local_cohortmembership'));
     echo $OUTPUT->single_button(
         new moodle_url(
-            '/local/cohortunenroller/index.php'
+            '/local/cohortmembership/index.php'
         ),
-        get_string('uploadcsv', 'local_cohortunenroller')
+        get_string('uploadcsv', 'local_cohortmembership')
     );
 } else {
     // First page load: show the upload form.

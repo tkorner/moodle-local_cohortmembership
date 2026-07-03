@@ -1,4 +1,4 @@
-@local @local_cohortunenroller
+@local @local_cohortmembership
 Feature: Admins can unenroll users from cohorts
   In order to manage cohort enrolments
   As an admin
