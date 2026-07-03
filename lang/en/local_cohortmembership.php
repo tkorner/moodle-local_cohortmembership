@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['cohortidnumber_ignored_notice'] = 'Both cohort columns were present: "cohortid" was used, "cohortidnumber" was ignored.';
 $string['cohortmembership:manage'] = 'Manage cohort memberships (add/remove/sync via CSV)';
 $string['csvhelp'] = 'CSV headers: username,cohortid OR username,cohortidnumber.';
 $string['download'] = 'Download CSV';
@@ -29,6 +30,8 @@ $string['dryrun'] = 'Dry run (no changes)';
 $string['dryrun_notice'] = 'Dry run: no changes were made.';
 $string['error_bad_operation'] = 'Unknown operation';
 $string['error_headers'] = 'Missing headers: expect username,cohortid or username,cohortidnumber';
+$string['error_mixed_operations'] = 'A file must be either pure "sync" or pure "add"/"del", not a mix of both.';
+$string['error_missing_cohort_column'] = 'Missing headers: expect a "cohortid" or "cohortidnumber" column.';
 $string['error_nofile'] = 'Please upload a CSV file.';
 $string['legacy_format_notice'] = 'No "operation" column found: all rows were processed as "del" for backward compatibility.';
 $string['menulink'] = 'Cohort Unenroller';

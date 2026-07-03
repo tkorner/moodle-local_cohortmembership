@@ -36,16 +36,15 @@ class processor {
      * processed as 'del' (status quo of the old cohortunenroller plugin).
      *
      * A file whose rows are entirely 'sync' is processed per-user against the
-     * file-wide cohort universe (see operation_sync). Any other mix of
-     * operations (including 'sync' mixed with add/del) is processed row by
-     * row; a full validation-time mix guard lands in a later step, until
-     * then a stray 'sync' row in a delta file is reported as
-     * error_bad_operation.
+     * file-wide cohort universe (see operation_sync). Any other mix
+     * (including 'sync' mixed with add/del) fails the file-level validation
+     * below and is rejected before any row is touched.
      *
      * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
      *                            'operation' => string|null]
      * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
-     * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool]
+     * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool,
+     *                 'cohortidnumber_ignored' => bool, 'validation_error' => string|null]
      */
     public static function process(array $rows, array $options = []): array {
         global $CFG;
@@ -60,17 +59,58 @@ class processor {
             }
         }
 
+        // A column is "present" if at least one row carries its key, regardless of value -
+        // mirrors how the CSV importer only adds a key for columns that exist in the header.
+        $hascohortid = false;
+        $hascohortidnumber = false;
+        foreach ($rows as $r) {
+            $hascohortid = $hascohortid || array_key_exists('cohortid', $r);
+            $hascohortidnumber = $hascohortidnumber || array_key_exists('cohortidnumber', $r);
+        }
+        $cohortidnumberignored = $hascohortid && $hascohortidnumber;
+
+        if (!$hascohortid && !$hascohortidnumber) {
+            return self::rejected($rows, $legacyformat, 'error_missing_cohort_column');
+        }
+
+        $ops = [];
         if (!$legacyformat) {
-            $ops = [];
             foreach ($rows as $r) {
                 $ops[\core_text::strtolower(trim((string)($r['operation'] ?? '')))] = true;
             }
-            if (count($ops) === 1 && isset($ops['sync'])) {
-                return operation_sync::process($rows, $options);
+            if (isset($ops['sync']) && count($ops) > 1) {
+                return self::rejected($rows, $legacyformat, 'error_mixed_operations');
             }
         }
 
-        return self::process_delta($rows, $legacyformat, $options);
+        if (count($ops) === 1 && isset($ops['sync'])) {
+            $payload = operation_sync::process($rows, $options);
+        } else {
+            $payload = self::process_delta($rows, $legacyformat, $options);
+        }
+
+        $payload['cohortidnumber_ignored'] = $cohortidnumberignored;
+        $payload['validation_error'] = null;
+        return $payload;
+    }
+
+    /**
+     * Build the payload for a file that fails file-level validation: nothing
+     * is processed, no row in the file is touched.
+     *
+     * @param array $rows
+     * @param bool $legacyformat
+     * @param string $error Lang string identifier describing the failure.
+     * @return array
+     */
+    private static function rejected(array $rows, bool $legacyformat, string $error): array {
+        return [
+            'results' => [],
+            'counters' => ['total' => count($rows), 'valid' => 0, 'processed' => 0, 'skipped' => 0, 'errors' => 0],
+            'legacy_format' => $legacyformat,
+            'cohortidnumber_ignored' => false,
+            'validation_error' => $error,
+        ];
     }
 
     /**
