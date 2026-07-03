@@ -28,12 +28,21 @@
 
 namespace local_cohortmembership;
 
+use local_cohortmembership\local\cohortsync_detector;
 use local_cohortmembership\local\processor;
 
 /**
  * Class processor_del_test
  */
 final class processor_del_test extends \advanced_testcase {
+    /**
+     * @return void
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        cohortsync_detector::reset_cache();
+    }
+
     /**
      * SPEC testfälle 6, 7, 8: CSV without an 'operation' column is treated
      * entirely as 'del' (backward compatibility with the old plugin).
@@ -137,6 +146,40 @@ final class processor_del_test extends \advanced_testcase {
         $this->assertSame('status_removed', $payload['results'][0]['status']);
         // Still a member: dry run must not touch the database.
         $this->assertTrue($this->record_exists('cohort_members', ['cohortid' => $c1->id, 'userid' => $u1->id]));
+    }
+
+    /**
+     * A del removal must flag whether the cohort is used by an active
+     * enrol_cohort instance (CLAUDE.md §Kritische Fachlogik: required for
+     * every removal, del or sync, since it can trigger a course unenrolment).
+     *
+     * @covers \local_cohortmembership\local\operation_del::execute
+     * @return void
+     */
+    public function test_del_flags_cohortsync_warning(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+
+        $u1 = $this->getDataGenerator()->create_user(['username' => 'alice']);
+        $c1 = $this->getDataGenerator()->create_cohort(['idnumber' => 'cohortZ']);
+        cohort_add_member($c1->id, $u1->id);
+
+        $course = $this->getDataGenerator()->create_course();
+        $DB->insert_record('enrol', (object)[
+            'enrol' => 'cohort',
+            'status' => ENROL_INSTANCE_ENABLED,
+            'courseid' => $course->id,
+            'customint1' => $c1->id,
+        ]);
+
+        $rows = [
+            ['username' => 'alice', 'cohortidnumber' => 'cohortZ', 'operation' => 'del'],
+        ];
+
+        $payload = processor::process($rows, ['dryrun' => false]);
+
+        $this->assertSame('status_removed', $payload['results'][0]['status']);
+        $this->assertTrue($payload['results'][0]['cohortsync_warning']);
     }
 
     /**

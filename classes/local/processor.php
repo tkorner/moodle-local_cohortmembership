@@ -25,8 +25,8 @@
 namespace local_cohortmembership\local;
 
 /**
- * Service class: resolves username + cohort mappings and dispatches each row
- * to the operation (add/del/sync) handler.
+ * Service class: resolves username + cohort mappings and dispatches to the
+ * operation (add/del/sync) handler.
  */
 class processor {
     /**
@@ -35,17 +35,21 @@ class processor {
      * A CSV without an 'operation' column is treated as legacy: every row is
      * processed as 'del' (status quo of the old cohortunenroller plugin).
      *
+     * A file whose rows are entirely 'sync' is processed per-user against the
+     * file-wide cohort universe (see operation_sync). Any other mix of
+     * operations (including 'sync' mixed with add/del) is processed row by
+     * row; a full validation-time mix guard lands in a later step, until
+     * then a stray 'sync' row in a delta file is reported as
+     * error_bad_operation.
+     *
      * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
      *                            'operation' => string|null]
      * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
      * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool]
      */
     public static function process(array $rows, array $options = []): array {
-        global $DB, $CFG;
+        global $CFG;
         require_once($CFG->dirroot . '/cohort/lib.php');
-
-        $standardise = !empty($options['standardise']);
-        $dryrun      = !empty($options['dryrun']);
 
         // No row carries an 'operation' key at all -> legacy CSV, treat everything as 'del'.
         $legacyformat = true;
@@ -55,6 +59,33 @@ class processor {
                 break;
             }
         }
+
+        if (!$legacyformat) {
+            $ops = [];
+            foreach ($rows as $r) {
+                $ops[\core_text::strtolower(trim((string)($r['operation'] ?? '')))] = true;
+            }
+            if (count($ops) === 1 && isset($ops['sync'])) {
+                return operation_sync::process($rows, $options);
+            }
+        }
+
+        return self::process_delta($rows, $legacyformat, $options);
+    }
+
+    /**
+     * Process rows one at a time as add/del (or legacy del) operations.
+     *
+     * @param array $rows
+     * @param bool $legacyformat
+     * @param array $options
+     * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool]
+     */
+    private static function process_delta(array $rows, bool $legacyformat, array $options): array {
+        global $DB;
+
+        $standardise = !empty($options['standardise']);
+        $dryrun      = !empty($options['dryrun']);
 
         $seenpairs = [];
         $results   = [];
@@ -77,7 +108,7 @@ class processor {
             // Basic validation.
             if ($username === '' || ($cohortid === null && ($cohortidnumber === null || $cohortidnumber === ''))) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_invalid'];
+                    'operation' => $operation, 'status' => 'status_invalid', 'cohortsync_warning' => false];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -87,7 +118,7 @@ class processor {
             $pairkey = $operation . '|' . $username . '|' . ($cohortid !== null ? ('id:' . $cohortid) : ('idn:' . $cohortidnumber));
             if (isset($seenpairs[$pairkey])) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_duplicate'];
+                    'operation' => $operation, 'status' => 'status_duplicate', 'cohortsync_warning' => false];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -98,7 +129,7 @@ class processor {
             $user = $DB->get_record('user', ['username' => $username, 'deleted' => 0], 'id', IGNORE_MISSING);
             if (!$user) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_usernotfound'];
+                    'operation' => $operation, 'status' => 'status_usernotfound', 'cohortsync_warning' => false];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -112,7 +143,7 @@ class processor {
             }
             if (!$cohort) {
                 $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_cohortnotfound'];
+                    'operation' => $operation, 'status' => 'status_cohortnotfound', 'cohortsync_warning' => false];
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
@@ -131,7 +162,8 @@ class processor {
             }
 
             $results[] = ['username' => $username, 'cohortid' => $cohort->id, 'cohortidnumber' => $cohortidnumber ?? '',
-                'operation' => $operation, 'status' => $opresult['status']];
+                'operation' => $operation, 'status' => $opresult['status'],
+                'cohortsync_warning' => $opresult['cohortsync_warning'] ?? false];
 
             if (in_array($opresult['status'], ['status_removed', 'status_added'], true)) {
                 $counters['valid']++;

@@ -36,7 +36,7 @@ final class operation_del {
      * @param int $cohortid
      * @param int $userid
      * @param bool $dryrun
-     * @return array ['status' => string]
+     * @return array ['status' => string, 'cohortsync_warning' => bool]
      */
     public static function execute(int $cohortid, int $userid, bool $dryrun): array {
         global $DB;
@@ -46,10 +46,14 @@ final class operation_del {
             return ['status' => 'status_notmember'];
         }
 
+        // Check before removing: an active cohort-sync enrolment can drop the
+        // user's course grades/groups along with the cohort membership.
+        $warning = cohortsync_detector::uses($cohortid);
+
         if (!$dryrun) {
             cohort_remove_member($cohortid, $userid);
         }
 
-        return ['status' => 'status_removed'];
+        return ['status' => 'status_removed', 'cohortsync_warning' => $warning];
     }
 }
