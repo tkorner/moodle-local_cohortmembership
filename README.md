@@ -150,11 +150,30 @@ display it and offer the CSV download. It implements
 2. Site administration → Notifications, to trigger the install/upgrade.
 3. Open: Site administration → Plugins → Local plugins → Cohort Membership.
 
+## Compatibility
+
+Targets Moodle 4.5 LTS and 5.0-5.2, PHP 8.1-8.4. Verified by actually
+installing the plugin against a real checkout of each Moodle 5.x point
+release (not just reading changelogs) and running the full PHPUnit suite
+plus a live CLI smoke test against each:
+
+| Moodle version | Result |
+|---|---|
+| 5.0.8+ | ✅ PHPUnit 33/33, CLI smoke test (real DB changes verified) |
+| 5.1.5+ | ✅ PHPUnit 33/33 |
+| 5.2.1+ | ✅ PHPUnit 33/33 (also the primary dev/live-verification target throughout development) |
+
+Moodle 5.1 introduced a `public/` web-root split (the actual codebase
+moves one level down, e.g. `public/local/...`); this plugin has no
+dependency on the installation's directory layout (no hardcoded
+`dirroot`-relative paths outside the standard `$CFG->dirroot`-based
+includes), so it is unaffected either way.
+
 ## Tests & CI
 
 This plugin uses [Moodle Plugin CI](https://moodlehq.github.io/moodle-plugin-ci/)
-on GitHub Actions against PHP 8.1-8.4 and both Moodle 4.5 LTS and 5.0, on
-MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs), PHPDoc
+on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1 and 5.2,
+on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs), PHPDoc
 checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
 Behat.
 
