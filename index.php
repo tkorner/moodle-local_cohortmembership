@@ -53,15 +53,17 @@ if ($download) {
     if (!empty($SESSION->local_cohortmembership_report)) {
         $rows = $SESSION->local_cohortmembership_report['rows'] ?? [];
         $export = new csv_export_writer();
-        $export->set_filename('cohort_unenroller_results');
-        $export->add_data(['username', 'cohortid', 'cohortidnumber', 'status']);
+        $export->set_filename('cohort_membership_results');
+        $export->add_data(['username', 'cohortid', 'cohortidnumber', 'operation', 'status', 'cohortsyncwarning']);
 
         foreach ($rows as $r) {
             $export->add_data([
                 $r['username'] ?? '',
                 isset($r['cohortid']) ? (string)$r['cohortid'] : '',
                 $r['cohortidnumber'] ?? '',
+                $r['operation'] ?? '',
                 $r['status_readable'] ?? ($r['status'] ?? ''),
+                !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),
             ]);
         }
         $export->download_file();
@@ -71,7 +73,7 @@ if ($download) {
 
 // Standard moodleform flow.
 if ($mform->is_cancelled()) {
-    redirect(new moodle_url('/admin/search.php?query=Cohort%20Unenroller'));
+    redirect(new moodle_url('/admin/search.php?query=Cohort%20Membership'));
 } else if ($data = $mform->get_data()) {
     // Form includes sesskey; still enforce explicitly for clarity.
     require_sesskey();
@@ -97,9 +99,11 @@ if ($mform->is_cancelled()) {
     $columns = array_map('strtolower', $cir->get_columns() ?? []);
     $cir->init();
 
-    // Validate required headers.
+    // Validate required headers. The full sync/delta + column validation
+    // happens inside processor::process(); this is just enough to build rows.
     $hasid = in_array('cohortid', $columns, true);
     $hasidnumber = in_array('cohortidnumber', $columns, true);
+    $hasoperation = in_array('operation', $columns, true);
     if (!in_array('username', $columns, true) || (!$hasid && !$hasidnumber)) {
         echo $OUTPUT->notification(get_string('error_headers', 'local_cohortmembership'), 'error');
         $cir->close();
@@ -129,6 +133,9 @@ if ($mform->is_cancelled()) {
         if ($hasidnumber) {
             $rec['cohortidnumber'] = trim((string)($row[$colmap['cohortidnumber']] ?? ''));
         }
+        if ($hasoperation) {
+            $rec['operation'] = trim((string)($row[$colmap['operation']] ?? ''));
+        }
         $rows[] = $rec;
     }
     $cir->close();
@@ -140,22 +147,41 @@ if ($mform->is_cancelled()) {
         'dryrun' => $dryrun,
     ]);
 
+    // A file-level validation failure means nothing was processed at all.
+    if ($payload['validation_error'] !== null) {
+        echo $OUTPUT->notification(get_string($payload['validation_error'], 'local_cohortmembership'), 'error');
+        $mform->display();
+        echo $OUTPUT->footer();
+        exit;
+    }
+
     $results = $payload['results'];
     $counters = $payload['counters'];
 
     // Human-readable status strings and minimal sanitising before templating.
     foreach ($results as &$r) {
         $r['status_readable'] = get_string($r['status'], 'local_cohortmembership');
+        if ($dryrun) {
+            $r['status_readable'] = get_string('dryrun_status_prefix', 'local_cohortmembership') . ' ' . $r['status_readable'];
+        }
         // Mustache escapes by default; preparing strings defensively is fine.
         $r['username'] = $r['username'] ?? '';
         $r['cohortid'] = isset($r['cohortid']) ? (string)$r['cohortid'] : '';
         $r['cohortidnumber'] = $r['cohortidnumber'] ?? '';
+        $r['operation'] = $r['operation'] ?? '';
     }
+    unset($r);
 
     // Persist for CSV download.
     $SESSION->local_cohortmembership_report = ['rows' => $results, 'counters' => $counters];
 
-    // Informational notice for dry run.
+    // Informational notices.
+    if ($payload['legacy_format']) {
+        echo $OUTPUT->notification(get_string('legacy_format_notice', 'local_cohortmembership'), 'info');
+    }
+    if ($payload['cohortidnumber_ignored']) {
+        echo $OUTPUT->notification(get_string('cohortidnumber_ignored_notice', 'local_cohortmembership'), 'info');
+    }
     if ($dryrun) {
         echo $OUTPUT->notification(get_string('dryrun_notice', 'local_cohortmembership'), 'info');
     }

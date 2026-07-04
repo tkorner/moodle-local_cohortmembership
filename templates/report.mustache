@@ -20,6 +20,7 @@
     <li>{{#str}} rows_processed, local_cohortmembership {{/str}}: {{counters.processed}}</li>
     <li>{{#str}} rows_skipped, local_cohortmembership {{/str}}: {{counters.skipped}}</li>
     <li>{{#str}} rows_errors, local_cohortmembership {{/str}}: {{counters.errors}}</li>
+    <li>{{#str}} rows_warnings, local_cohortmembership {{/str}}: {{counters.warnings}}</li>
   </ul>
 
   <table class="generaltable">
@@ -28,7 +29,9 @@
         <th>username</th>
         <th>cohortid</th>
         <th>cohortidnumber</th>
+        <th>operation</th>
         <th>status</th>
+        <th>cohort-sync</th>
       </tr>
     </thead>
     <tbody>
@@ -37,7 +40,12 @@
         <td>{{username}}</td>
         <td>{{cohortid}}</td>
         <td>{{cohortidnumber}}</td>
+        <td>{{operation}}</td>
         <td>{{status_readable}}</td>
+        <td>
+          {{#cohortsync_warning}}{{#str}} yes, moodle {{/str}}{{/cohortsync_warning}}
+          {{^cohortsync_warning}}{{#str}} no, moodle {{/str}}{{/cohortsync_warning}}
+        </td>
       </tr>
       {{/rows}}
     </tbody>

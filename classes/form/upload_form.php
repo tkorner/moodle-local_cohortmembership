@@ -42,6 +42,14 @@ class upload_form extends \moodleform {
     public function definition() {
         $mform = $this->_form;
 
+        // Cohort-sync risk warning (SPEC §2): removal can trigger a course unenrolment.
+        $mform->addElement(
+            'static',
+            'cohortsyncwarning',
+            '',
+            \html_writer::div(get_string('cohortsync_warning_notice', 'local_cohortmembership'), 'alert alert-warning')
+        );
+
         // CSV file input.
         $mform->addElement(
             'filepicker',

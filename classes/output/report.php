@@ -32,6 +32,12 @@ use renderer_base;
  * Renderable data object for the result report.
  */
 class report implements renderable, templatable {
+    /** @var array Processed rows. */
+    private array $rows;
+
+    /** @var array Summary counters. */
+    private array $counters;
+
     /**
      * Constructor.
      *
@@ -42,7 +48,8 @@ class report implements renderable, templatable {
         array $rows,
         array $counters
     ) {
-
+        $this->rows = $rows;
+        $this->counters = $counters;
     }
 
     /**
@@ -52,9 +59,19 @@ class report implements renderable, templatable {
      * @return array
      */
     public function export_for_template(renderer_base $output): array {
+        $warnings = 0;
+        foreach ($this->rows as $row) {
+            if (!empty($row['cohortsync_warning'])) {
+                $warnings++;
+            }
+        }
+
+        $counters = $this->counters;
+        $counters['warnings'] = $warnings;
+
         return [
             'rows' => array_values($this->rows),
-            'counters' => $this->counters,
+            'counters' => $counters,
         ];
     }
 }

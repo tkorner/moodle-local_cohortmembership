@@ -24,19 +24,24 @@
 
 $string['cohortidnumber_ignored_notice'] = 'Both cohort columns were present: "cohortid" was used, "cohortidnumber" was ignored.';
 $string['cohortmembership:manage'] = 'Manage cohort memberships (add/remove/sync via CSV)';
-$string['csvhelp'] = 'CSV headers: username,cohortid OR username,cohortidnumber.';
+$string['cohortsync_warning_notice'] = 'Removing a user from a cohort used by an active "Cohort sync" enrolment '
+    . 'method can also unenrol them from the linked course, along with their grades and group memberships. '
+    . 'Consider taking a database backup before running this in live mode.';
+$string['csvhelp'] = 'CSV headers: username,(cohortid OR cohortidnumber)[,operation]. operation is one of '
+    . 'add/del/sync; if the column is omitted, every row is treated as del.';
 $string['download'] = 'Download CSV';
 $string['dryrun'] = 'Dry run (no changes)';
 $string['dryrun_notice'] = 'Dry run: no changes were made.';
+$string['dryrun_status_prefix'] = '(dry run)';
 $string['error_bad_operation'] = 'Unknown operation';
 $string['error_headers'] = 'Missing headers: expect username,cohortid or username,cohortidnumber';
 $string['error_mixed_operations'] = 'A file must be either pure "sync" or pure "add"/"del", not a mix of both.';
 $string['error_missing_cohort_column'] = 'Missing headers: expect a "cohortid" or "cohortidnumber" column.';
 $string['error_nofile'] = 'Please upload a CSV file.';
 $string['legacy_format_notice'] = 'No "operation" column found: all rows were processed as "del" for backward compatibility.';
-$string['menulink'] = 'Cohort Unenroller';
-$string['pageheading'] = 'Cohort Unenroller';
-$string['pluginname'] = 'Cohort Unenroller';
+$string['menulink'] = 'Cohort Membership';
+$string['pageheading'] = 'Cohort Membership';
+$string['pluginname'] = 'Cohort Membership';
 $string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['results'] = 'Results';
 $string['rows_errors'] = 'Rows with errors';
@@ -44,6 +49,7 @@ $string['rows_processed'] = 'Rows processed';
 $string['rows_skipped'] = 'Rows skipped';
 $string['rows_total'] = 'Rows in file';
 $string['rows_valid'] = 'Valid rows';
+$string['rows_warnings'] = 'Removals with a cohort-sync warning';
 $string['standardise_usernames'] = 'Standardise usernames (trim + lowercase)';
 $string['status_added'] = 'Added';
 $string['status_alreadymember'] = 'Already a member';

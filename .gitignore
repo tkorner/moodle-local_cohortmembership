@@ -9,3 +9,4 @@ Thumbs.db
 .phpunit.result.cache
 coverage/
 tmp/
+CLAUDE.md
