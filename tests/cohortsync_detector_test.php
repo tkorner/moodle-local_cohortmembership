@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for cohortsync_detector (SPEC testfälle 17-19).
+ * Tests for cohortsync_detector (SPEC test cases 17-19).
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
@@ -42,7 +42,7 @@ final class cohortsync_detector_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 17: cohort with an active enrol_cohort instance -> uses()
+     * SPEC test case 17: cohort with an active enrol_cohort instance -> uses()
      * is true, and the course is listed.
      *
      * @covers \local_cohortmembership\local\cohortsync_detector
@@ -66,7 +66,7 @@ final class cohortsync_detector_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 18: cohort with a disabled (status=1) enrol_cohort
+     * SPEC test case 18: cohort with a disabled (status=1) enrol_cohort
      * instance -> uses() is false.
      *
      * @covers \local_cohortmembership\local\cohortsync_detector
@@ -90,7 +90,7 @@ final class cohortsync_detector_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 19: cohort without any enrol_cohort instance -> uses()
+     * SPEC test case 19: cohort without any enrol_cohort instance -> uses()
      * is false.
      *
      * @covers \local_cohortmembership\local\cohortsync_detector

@@ -28,7 +28,8 @@ if ($hassiteconfig) {
     $settings = new admin_externalpage(
         'local_cohortmembership',
         get_string('pluginname', 'local_cohortmembership'),
-        new moodle_url('/local/cohortmembership/index.php')
+        new moodle_url('/local/cohortmembership/index.php'),
+        'local/cohortmembership:manage'
     );
     $ADMIN->add('localplugins', $settings);
 }

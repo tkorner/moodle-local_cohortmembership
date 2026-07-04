@@ -202,7 +202,7 @@ if (!empty($reportpath)) {
         foreach ($results as $r) {
             $status = get_string($r['status'], 'local_cohortmembership');
             if ($dryrun) {
-                $status = get_string('dryrun_status_prefix', 'local_cohortmembership') . ' ' . $status;
+                $status = get_string('dryrun_status', 'local_cohortmembership', $status);
             }
             fputcsv($fp, [
                 $r['username'] ?? '',

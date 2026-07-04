@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the 'sync' operation (SPEC testfälle 9-13).
+ * Tests for the 'sync' operation (SPEC test cases 9-13).
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
@@ -42,7 +42,7 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 9: a cohort the user belongs to, but which is never named
+     * SPEC test case 9: a cohort the user belongs to, but which is never named
      * anywhere in the sync file, is outside the universe and stays untouched.
      *
      * @covers \local_cohortmembership\local\operation_sync::process
@@ -68,7 +68,7 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 10: a universe cohort missing from the user's sync rows
+     * SPEC test case 10: a universe cohort missing from the user's sync rows
      * is removed.
      *
      * @covers \local_cohortmembership\local\operation_sync::process
@@ -100,7 +100,7 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 11: a target cohort the user is missing is added.
+     * SPEC test case 11: a target cohort the user is missing is added.
      *
      * @covers \local_cohortmembership\local\operation_sync::process
      * @return void
@@ -122,7 +122,7 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 12: current state already matches the target -> no-op,
+     * SPEC test case 12: current state already matches the target -> no-op,
      * reported as status_alreadymember (info, not an error).
      *
      * @covers \local_cohortmembership\local\operation_sync::process
@@ -147,7 +147,7 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 13: two users in one sync file with different targets
+     * SPEC test case 13: two users in one sync file with different targets
      * are kept correctly separate.
      *
      * @covers \local_cohortmembership\local\operation_sync::process

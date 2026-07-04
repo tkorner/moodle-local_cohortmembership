@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * File-level validation tests (SPEC testfälle 14-16).
+ * File-level validation tests (SPEC test cases 14-16).
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
@@ -31,7 +31,7 @@ use local_cohortmembership\local\processor;
  */
 final class processor_validation_test extends \advanced_testcase {
     /**
-     * SPEC testfall 14: a file mixing 'sync' with 'add'/'del' rows is
+     * SPEC test case 14: a file mixing 'sync' with 'add'/'del' rows is
      * rejected before any row is processed.
      *
      * @covers \local_cohortmembership\local\processor::process
@@ -57,7 +57,7 @@ final class processor_validation_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 15: a file with neither a cohortid nor a cohortidnumber
+     * SPEC test case 15: a file with neither a cohortid nor a cohortidnumber
      * column is rejected before any row is processed.
      *
      * @covers \local_cohortmembership\local\processor::process
@@ -77,7 +77,7 @@ final class processor_validation_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 16: if both cohort columns are present, cohortid wins
+     * SPEC test case 16: if both cohort columns are present, cohortid wins
      * and the file is flagged so the report can note that cohortidnumber
      * was ignored.
      *

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the 'add' operation (SPEC testfälle 1-5).
+ * Tests for the 'add' operation (SPEC test cases 1-5).
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
@@ -31,7 +31,7 @@ use local_cohortmembership\local\processor;
  */
 final class operation_add_test extends \advanced_testcase {
     /**
-     * SPEC testfall 1: add to an existing cohort, user not yet a member ->
+     * SPEC test case 1: add to an existing cohort, user not yet a member ->
      * membership created, status_added.
      *
      * @covers \local_cohortmembership\local\operation_add::execute
@@ -54,7 +54,7 @@ final class operation_add_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 2: add, user already a member -> no change, status_alreadymember.
+     * SPEC test case 2: add, user already a member -> no change, status_alreadymember.
      *
      * @covers \local_cohortmembership\local\operation_add::execute
      * @return void
@@ -77,7 +77,7 @@ final class operation_add_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 3: add to an unknown cohort idnumber -> status_cohortnotfound,
+     * SPEC test case 3: add to an unknown cohort idnumber -> status_cohortnotfound,
      * and the plugin must never auto-create the cohort.
      *
      * @covers \local_cohortmembership\local\processor::process
@@ -101,7 +101,7 @@ final class operation_add_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 4: add for an unknown user -> status_usernotfound.
+     * SPEC test case 4: add for an unknown user -> status_usernotfound.
      *
      * @covers \local_cohortmembership\local\processor::process
      * @return void
@@ -121,7 +121,7 @@ final class operation_add_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfall 5: add in dry-run mode reports the simulated outcome but
+     * SPEC test case 5: add in dry-run mode reports the simulated outcome but
      * never changes the database.
      *
      * @covers \local_cohortmembership\local\operation_add::execute

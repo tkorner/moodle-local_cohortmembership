@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_cohortmembership';
-$plugin->version   = 2026070300;   // YYYYMMDDXX.
-$plugin->requires  = 2024052000;   // Moodle 4.5.
+$plugin->version   = 2026070400;   // YYYYMMDDXX.
+$plugin->requires  = 2024100700;   // Moodle 4.5.0 branching version (MOODLE_405_STABLE).
 $plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.5.0';
+$plugin->release   = '0.6.0';

@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
     'local/cohortmembership:manage' => [
-        'riskbitmask'  => RISK_XSS,
+        'riskbitmask'  => RISK_DATALOSS,
         'captype'      => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes'   => [

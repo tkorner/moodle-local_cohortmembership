@@ -162,7 +162,7 @@ if ($mform->is_cancelled()) {
     foreach ($results as &$r) {
         $r['status_readable'] = get_string($r['status'], 'local_cohortmembership');
         if ($dryrun) {
-            $r['status_readable'] = get_string('dryrun_status_prefix', 'local_cohortmembership') . ' ' . $r['status_readable'];
+            $r['status_readable'] = get_string('dryrun_status', 'local_cohortmembership', $r['status_readable']);
         }
         // Mustache escapes by default; preparing strings defensively is fine.
         $r['username'] = $r['username'] ?? '';

@@ -17,7 +17,7 @@
 /**
  * Processor / operation_del test.
  *
- * Regression tests for the 'del' operation (SPEC testfälle 6-8), covering both
+ * Regression tests for the 'del' operation (SPEC test cases 6-8), covering both
  * the legacy CSV format (no 'operation' column, status quo of the old
  * cohortunenroller plugin) and the explicit operation-dispatch path.
  *
@@ -46,7 +46,7 @@ final class processor_del_test extends \advanced_testcase {
     }
 
     /**
-     * SPEC testfälle 6, 7, 8: CSV without an 'operation' column is treated
+     * SPEC test cases 6, 7, 8: CSV without an 'operation' column is treated
      * entirely as 'del' (backward compatibility with the old plugin).
      *
      * @covers \local_cohortmembership\local\processor::process
@@ -79,7 +79,7 @@ final class processor_del_test extends \advanced_testcase {
 
         $payload = processor::process($rows, ['standardise' => true, 'dryrun' => false]);
 
-        // Testfall 8: no 'operation' column -> legacy format flag set.
+        // Test case 8: no 'operation' column -> legacy format flag set.
         $this->assertTrue($payload['legacy_format']);
 
         $map = [];
@@ -88,9 +88,9 @@ final class processor_del_test extends \advanced_testcase {
             $this->assertSame('del', $r['operation']);
         }
 
-        // Testfall 6: member -> removed.
+        // Test case 6: member -> removed.
         $this->assertSame('status_removed', $map['alice|cohortZ']);
-        // Testfall 7: not a member -> skipped, no error.
+        // Test case 7: not a member -> skipped, no error.
         $this->assertSame('status_notmember', $map['bob|cohortZ']);
         $this->assertSame('status_usernotfound', $map['nobody|cohortZ']);
         $this->assertSame('status_cohortnotfound', $map['charlie|doesnotexist']);
