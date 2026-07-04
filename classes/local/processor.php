@@ -212,7 +212,7 @@ class processor {
                 $counters['valid']++;
                 $counters['skipped']++;
             } else {
-                // error_bad_operation and any future unhandled status.
+                // Covers error_bad_operation and any future unhandled status.
                 $counters['errors']++;
                 $counters['skipped']++;
             }

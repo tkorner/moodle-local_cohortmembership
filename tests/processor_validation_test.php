@@ -90,7 +90,7 @@ final class processor_validation_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user(['username' => 'alice']);
         $cohort = $this->getDataGenerator()->create_cohort(['idnumber' => 'cohortZ']);
 
-        // cohortidnumber deliberately points at a cohort that does not exist:
+        // Cohortidnumber deliberately points at a cohort that does not exist:
         // if it were used instead of cohortid, this row would fail to resolve.
         $rows = [
             ['username' => 'alice', 'cohortid' => $cohort->id, 'cohortidnumber' => 'doesnotexist', 'operation' => 'add'],

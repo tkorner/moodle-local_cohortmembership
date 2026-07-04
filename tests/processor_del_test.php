@@ -36,6 +36,8 @@ use local_cohortmembership\local\processor;
  */
 final class processor_del_test extends \advanced_testcase {
     /**
+     * Reset the detector's static cache before each test.
+     *
      * @return void
      */
     protected function setUp(): void {

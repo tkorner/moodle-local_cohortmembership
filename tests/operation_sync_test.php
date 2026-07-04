@@ -32,6 +32,8 @@ use local_cohortmembership\local\processor;
  */
 final class operation_sync_test extends \advanced_testcase {
     /**
+     * Reset the detector's static cache before each test.
+     *
      * @return void
      */
     protected function setUp(): void {
@@ -198,7 +200,7 @@ final class operation_sync_test extends \advanced_testcase {
             'customint1' => $drop->id,
         ]);
 
-        // hans only lists kurs-inf-2026; kurs-bwl-2026 stays in the universe via anna's row.
+        // Hans only lists kurs-inf-2026; kurs-bwl-2026 stays in the universe via anna's row.
         $rows = [
             ['username' => 'hans', 'cohortidnumber' => 'kurs-inf-2026', 'operation' => 'sync'],
             ['username' => 'anna', 'cohortidnumber' => 'kurs-bwl-2026', 'operation' => 'sync'],

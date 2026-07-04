@@ -32,7 +32,7 @@ require_once($CFG->dirroot . '/cohort/lib.php');
 use local_cohortmembership\local\processor;
 
 // Parse CLI options.
-list($options, $unrecognized) = cli_get_params(
+[$options, $unrecognized] = cli_get_params(
     [
         'csv' => null,
         'report' => null,
