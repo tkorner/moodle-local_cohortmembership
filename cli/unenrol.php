@@ -87,8 +87,12 @@ if (!in_array($delimiter, $allowed, true)) {
     cli_error("Invalid --delimiter. Allowed: " . implode('|', $allowed), 1);
 }
 
-// Safety: require site admin for membership changes.
-require_admin();
+// CLI execution already implies server-level trust; there is no HTTP session to
+// require_login() against (require_admin() would try to redirect to the login
+// page and Moodle's CLI safety net would abort the script). Attribute the
+// resulting cohort_member_removed events to the admin account instead of
+// leaving $USER unset (id 0).
+\core\session\manager::set_user(get_admin());
 
 // Read CSV from disk.
 if (!is_readable($csvpath)) {
