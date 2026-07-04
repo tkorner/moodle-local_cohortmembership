@@ -39,6 +39,13 @@ $string['error_headers'] = 'Missing headers: expect username,cohortid or usernam
 $string['error_missing_cohort_column'] = 'Missing headers: expect a "cohortid" or "cohortidnumber" column.';
 $string['error_mixed_operations'] = 'A file must be either pure "sync" or pure "add"/"del", not a mix of both.';
 $string['error_nofile'] = 'Please upload a CSV file.';
+$string['exampleaddcsv'] = 'Example CSV (add/del)';
+$string['exampleaddcsv_help'] = 'Download this file, open it with a text or spreadsheet editor, and edit the '
+    . 'operation/username/cohortidnumber values to match your own add/del rows before uploading it.';
+$string['examplesynccsv'] = 'Example CSV (sync)';
+$string['examplesynccsv_help'] = 'Download this file, open it with a text or spreadsheet editor, and edit the '
+    . 'username/cohortidnumber values to match your own sync rows before uploading it. Remember: sync rows for '
+    . 'the same user list their full target cohort set.';
 $string['legacy_format_notice'] = 'No "operation" column found: all rows were processed as "del" for backward compatibility.';
 $string['menulink'] = 'Cohort Membership';
 $string['pageheading'] = 'Cohort Membership';

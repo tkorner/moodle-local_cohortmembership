@@ -50,6 +50,17 @@ class upload_form extends \moodleform {
             \html_writer::div(get_string('cohortsync_warning_notice', 'local_cohortmembership'), 'alert alert-warning')
         );
 
+        // Downloadable example files, same pattern as core's "Upload users" (tool_uploaduser).
+        $addcsvurl = new \moodle_url('example-add-del.csv');
+        $addcsvlink = \html_writer::link($addcsvurl, 'example-add-del.csv');
+        $mform->addElement('static', 'exampleaddcsv', get_string('exampleaddcsv', 'local_cohortmembership'), $addcsvlink);
+        $mform->addHelpButton('exampleaddcsv', 'exampleaddcsv', 'local_cohortmembership');
+
+        $synccsvurl = new \moodle_url('example-sync.csv');
+        $synccsvlink = \html_writer::link($synccsvurl, 'example-sync.csv');
+        $mform->addElement('static', 'examplesynccsv', get_string('examplesynccsv', 'local_cohortmembership'), $synccsvlink);
+        $mform->addHelpButton('examplesynccsv', 'examplesynccsv', 'local_cohortmembership');
+
         // CSV file input.
         $mform->addElement(
             'filepicker',

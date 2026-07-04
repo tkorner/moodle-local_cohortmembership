@@ -64,7 +64,8 @@ add,hans.muster,kurs-inf-2026
 del,hans.muster,kurs-inf-2023
 ```
 
-Downloadable example: [`examples/example-add-del.csv`](examples/example-add-del.csv).
+Downloadable example: [`example-add-del.csv`](example-add-del.csv) - also linked directly
+from the upload form itself, the same way core's "Upload users" offers its `example.csv`.
 
 - Exactly one of `cohortidnumber` (text) or `cohortid` (numeric) must be
   present as a column. If both are present, `cohortid` wins and the report
@@ -89,7 +90,8 @@ sync,anna.beispiel,kurs-bwl-2026
 ```
 
 Downloadable example (includes a third user, `peter.roth`, to show two
-users' targets computed independently): [`examples/example-sync.csv`](examples/example-sync.csv).
+users' targets computed independently): [`example-sync.csv`](example-sync.csv) -
+also linked directly from the upload form.
 
 - The **file universe** is the union of every cohort named anywhere in the
   file: `{kurs-inf-2026, basis-alle, kurs-bwl-2026}`.

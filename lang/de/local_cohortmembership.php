@@ -49,6 +49,14 @@ $string['error_missing_cohort_column'] = 'Fehlende Spalten: erwartet wird eine "
 $string['error_mixed_operations'] = 'Eine Datei muss entweder rein "sync" oder rein "add"/"del" sein, keine '
     . 'Mischung.';
 $string['error_nofile'] = 'Bitte eine CSV-Datei hochladen.';
+$string['exampleaddcsv'] = 'Beispiel-CSV (add/del)';
+$string['exampleaddcsv_help'] = 'Diese Datei herunterladen, mit einem Text- oder Tabellenkalkulationsprogramm '
+    . 'öffnen und die Werte von operation/username/cohortidnumber vor dem Hochladen an die eigenen add/del-Zeilen '
+    . 'anpassen.';
+$string['examplesynccsv'] = 'Beispiel-CSV (sync)';
+$string['examplesynccsv_help'] = 'Diese Datei herunterladen, mit einem Text- oder Tabellenkalkulationsprogramm '
+    . 'öffnen und die Werte von username/cohortidnumber vor dem Hochladen an die eigenen sync-Zeilen anpassen. '
+    . 'Wichtig: sync-Zeilen desselben Nutzers listen dessen vollständige Soll-Menge an globalen Gruppen.';
 $string['legacy_format_notice'] = 'Keine "operation"-Spalte gefunden: alle Zeilen wurden aus '
     . 'Kompatibilitätsgründen als "del" verarbeitet.';
 $string['menulink'] = 'Mitgliedschaft globaler Gruppen';
