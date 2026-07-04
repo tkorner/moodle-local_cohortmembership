@@ -1,4 +1,4 @@
-[![Moodle plugin CI](https://github.com/tkorner/moodle-lokal_cohortmembership/actions/workflows/moodle-ci.yml/badge.svg)](https://github.com/tkorner/moodle-lokal_cohortmembership/actions/workflows/moodle-ci.yml)
+[![Moodle plugin CI](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml/badge.svg)](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml)
 
 # Cohort Membership (Moodle local plugin)
 
@@ -64,6 +64,8 @@ add,hans.muster,kurs-inf-2026
 del,hans.muster,kurs-inf-2023
 ```
 
+Downloadable example: [`examples/example-add-del.csv`](examples/example-add-del.csv).
+
 - Exactly one of `cohortidnumber` (text) or `cohortid` (numeric) must be
   present as a column. If both are present, `cohortid` wins and the report
   notes that `cohortidnumber` was ignored.
@@ -85,6 +87,9 @@ sync,hans.muster,kurs-inf-2026
 sync,hans.muster,basis-alle
 sync,anna.beispiel,kurs-bwl-2026
 ```
+
+Downloadable example (includes a third user, `peter.roth`, to show two
+users' targets computed independently): [`examples/example-sync.csv`](examples/example-sync.csv).
 
 - The **file universe** is the union of every cohort named anywhere in the
   file: `{kurs-inf-2026, basis-alle, kurs-bwl-2026}`.

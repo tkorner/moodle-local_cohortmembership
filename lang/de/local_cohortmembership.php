@@ -17,33 +17,43 @@
 /**
  * Sprachdatei (Deutsch).
  *
+ * Terminologie richtet sich nach dem offiziellen deutschen Moodle-Sprachpaket:
+ * "cohort" wird dort mit "globale Gruppe" übersetzt (siehe z.B. cohort/idnumber
+ * -> "Globale Gruppen-ID", moodle/cohort:assign -> "Mitglieder von globalen
+ * Gruppen verwalten"), nicht mit "Kohorte".
+ *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['cohortidnumber_ignored_notice'] = 'Es waren beide Kohorten-Spalten vorhanden: "cohortid" wurde verwendet, '
-    . '"cohortidnumber" wurde ignoriert.';
-$string['cohortmembership:manage'] = 'Kohorten-Mitgliedschaften verwalten (Hinzufügen/Entfernen/Sync per CSV)';
-$string['cohortsync_warning_notice'] = 'Das Entfernen eines Nutzers aus einer Kohorte, die von einer aktiven '
-    . '"Cohort sync"-Einschreibemethode verwendet wird, kann ihn auch aus dem verknüpften Kurs abmelden - inklusive '
-    . 'Bewertungen und Gruppenzugehörigkeiten. Erstellen Sie vor einem echten Lauf ein Datenbank-Backup.';
+$string['cohortidnumber_ignored_notice'] = 'Es waren beide Spalten für die globale Gruppe vorhanden: "cohortid" '
+    . 'wurde verwendet, "cohortidnumber" wurde ignoriert.';
+$string['cohortmembership:manage'] = 'Mitgliedschaften in globalen Gruppen verwalten (Hinzufügen/Entfernen/Sync '
+    . 'per CSV)';
+$string['cohortsync_warning_notice'] = 'Das Entfernen eines Nutzers aus einer globalen Gruppe, die über eine '
+    . 'aktive "Cohort-Sync"-Einschreibemethode mit einem Kurs verknüpft ist, kann ihn auch aus diesem Kurs '
+    . 'abmelden - inklusive Bewertungen und Gruppenzugehörigkeiten. Erstellen Sie vor einem echten Lauf ein '
+    . 'Datenbank-Backup.';
 $string['csvhelp'] = 'CSV-Spalten: username,(cohortid ODER cohortidnumber)[,operation]. operation ist eines von '
     . 'add/del/sync; fehlt die Spalte, wird jede Zeile als del behandelt.';
+$string['delimiter'] = 'CSV-Trennzeichen';
 $string['download'] = 'CSV herunterladen';
 $string['dryrun'] = 'Testlauf (keine Änderungen)';
 $string['dryrun_notice'] = 'Testlauf: es wurden keine Änderungen vorgenommen.';
 $string['dryrun_status'] = '(Testlauf) {$a}';
 $string['error_bad_operation'] = 'Unbekannte Operation';
 $string['error_headers'] = 'Fehlende Spalten: erwartet werden username,cohortid oder username,cohortidnumber';
-$string['error_missing_cohort_column'] = 'Fehlende Spalten: erwartet wird eine "cohortid"- oder "cohortidnumber"-Spalte.';
-$string['error_mixed_operations'] = 'Eine Datei muss entweder rein "sync" oder rein "add"/"del" sein, keine Mischung.';
+$string['error_missing_cohort_column'] = 'Fehlende Spalten: erwartet wird eine "cohortid"- oder '
+    . '"cohortidnumber"-Spalte.';
+$string['error_mixed_operations'] = 'Eine Datei muss entweder rein "sync" oder rein "add"/"del" sein, keine '
+    . 'Mischung.';
 $string['error_nofile'] = 'Bitte eine CSV-Datei hochladen.';
-$string['legacy_format_notice'] = 'Keine "operation"-Spalte gefunden: alle Zeilen wurden aus Kompatibilitätsgründen '
-    . 'als "del" verarbeitet.';
-$string['menulink'] = 'Kohorten-Mitgliedschaft';
-$string['pageheading'] = 'Kohorten-Mitgliedschaft';
-$string['pluginname'] = 'Kohorten-Mitgliedschaft';
+$string['legacy_format_notice'] = 'Keine "operation"-Spalte gefunden: alle Zeilen wurden aus '
+    . 'Kompatibilitätsgründen als "del" verarbeitet.';
+$string['menulink'] = 'Mitgliedschaft globaler Gruppen';
+$string['pageheading'] = 'Mitgliedschaft globaler Gruppen';
+$string['pluginname'] = 'Mitgliedschaft globaler Gruppen';
 $string['privacy:metadata'] = 'Dieses Plugin speichert keine personenbezogenen Daten.';
 $string['results'] = 'Ergebnisse';
 $string['rows_errors'] = 'Zeilen mit Fehlern';
@@ -52,10 +62,10 @@ $string['rows_skipped'] = 'Übersprungene Zeilen';
 $string['rows_total'] = 'Zeilen in der Datei';
 $string['rows_valid'] = 'Gültige Zeilen';
 $string['rows_warnings'] = 'Entfernungen mit Cohort-Sync-Warnung';
-$string['standardise_usernames'] = 'Nutzernamen normalisieren (trimmen + kleinschreiben)';
+$string['standardise_usernames'] = 'Nutzernamen normalisieren (Leerzeichen entfernen, kleinschreiben)';
 $string['status_added'] = 'Hinzugefügt';
 $string['status_alreadymember'] = 'Bereits Mitglied';
-$string['status_cohortnotfound'] = 'Kohorte nicht gefunden';
+$string['status_cohortnotfound'] = 'Globale Gruppe nicht gefunden';
 $string['status_duplicate'] = 'Duplikat in der Datei';
 $string['status_invalid'] = 'Ungültige Daten';
 $string['status_notmember'] = 'Nutzer ist kein Mitglied';

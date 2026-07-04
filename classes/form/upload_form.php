@@ -63,11 +63,11 @@ class upload_form extends \moodleform {
         // Help text.
         $mform->addElement('static', 'csvhelp', '', get_string('csvhelp', 'local_cohortmembership'));
 
-        // CSV delimiter (same as core "Upload users").
+        // CSV delimiter (same choices as core "Upload users").
         $mform->addElement(
             'select',
             'delimiter',
-            get_string('csvdelimiter', 'admin'),
+            get_string('delimiter', 'local_cohortmembership'),
             \csv_import_reader::get_delimiter_list()
         );
         $mform->setDefault('delimiter', 'comma');

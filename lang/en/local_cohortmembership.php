@@ -29,6 +29,7 @@ $string['cohortsync_warning_notice'] = 'Removing a user from a cohort used by an
     . 'Consider taking a database backup before running this in live mode.';
 $string['csvhelp'] = 'CSV headers: username,(cohortid OR cohortidnumber)[,operation]. operation is one of '
     . 'add/del/sync; if the column is omitted, every row is treated as del.';
+$string['delimiter'] = 'CSV delimiter';
 $string['download'] = 'Download CSV';
 $string['dryrun'] = 'Dry run (no changes)';
 $string['dryrun_notice'] = 'Dry run: no changes were made.';
