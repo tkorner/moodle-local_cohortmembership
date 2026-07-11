@@ -50,6 +50,9 @@ $string['legacy_format_notice'] = 'No "operation" column found: all rows were pr
 $string['menulink'] = 'Cohort Membership';
 $string['pageheading'] = 'Cohort Membership';
 $string['pluginname'] = 'Cohort Membership';
+$string['pluginname_help'] = 'Manages cohort memberships (add, remove, sync) via CSV upload. See the '
+    . '[plugin repository on GitHub](https://github.com/tkorner/moodle-local_cohortmembership) for the full '
+    . 'documentation, CSV format examples and specification.';
 $string['privacy:metadata'] = 'This plugin does not store any personal data.';
 $string['results'] = 'Results';
 $string['rows_errors'] = 'Rows with errors';

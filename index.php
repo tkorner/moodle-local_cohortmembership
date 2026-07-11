@@ -34,7 +34,9 @@ require_capability('moodle/cohort:assign', $context);
 $PAGE->set_url(new moodle_url('/local/cohortmembership/index.php'));
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('pluginname', 'local_cohortmembership'));
-$PAGE->set_heading(get_string('pageheading', 'local_cohortmembership'));
+$PAGE->set_heading(
+    get_string('pageheading', 'local_cohortmembership') . $OUTPUT->help_icon('pluginname', 'local_cohortmembership')
+);
 
 echo $OUTPUT->header();
 

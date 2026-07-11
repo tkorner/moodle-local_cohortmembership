@@ -62,6 +62,9 @@ $string['legacy_format_notice'] = 'Keine "operation"-Spalte gefunden: alle Zeile
 $string['menulink'] = 'Mitgliedschaft globaler Gruppen';
 $string['pageheading'] = 'Mitgliedschaft globaler Gruppen';
 $string['pluginname'] = 'Mitgliedschaft globaler Gruppen';
+$string['pluginname_help'] = 'Verwaltet Mitgliedschaften in globalen Gruppen (Hinzufügen, Entfernen, Sync) per '
+    . 'CSV-Upload. Die vollständige Dokumentation, CSV-Format-Beispiele und Spezifikation finden Sie im '
+    . '[Plugin-Repository auf GitHub](https://github.com/tkorner/moodle-local_cohortmembership).';
 $string['privacy:metadata'] = 'Dieses Plugin speichert keine personenbezogenen Daten.';
 $string['results'] = 'Ergebnisse';
 $string['rows_errors'] = 'Zeilen mit Fehlern';
