@@ -34,11 +34,17 @@ require_capability('moodle/cohort:assign', $context);
 $PAGE->set_url(new moodle_url('/local/cohortmembership/index.php'));
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('pluginname', 'local_cohortmembership'));
-$PAGE->set_heading(
-    get_string('pageheading', 'local_cohortmembership') . $OUTPUT->help_icon('pluginname', 'local_cohortmembership')
-);
+// Heading is left empty here and printed below via heading_with_help() instead: set_heading()
+// sanitises its argument (format_string()/clean_text()), which strips the data-bs-* attributes
+// the help icon's popover needs, silently turning it into a non-interactive icon.
+$PAGE->set_heading('');
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading_with_help(
+    get_string('pageheading', 'local_cohortmembership'),
+    'pluginname',
+    'local_cohortmembership'
+);
 
 // Libs needed below.
 require_once($CFG->libdir . '/csvlib.class.php');
