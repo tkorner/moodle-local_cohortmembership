@@ -204,6 +204,11 @@ See [`SPEC-cohortmembership.md`](SPEC-cohortmembership.md) for the complete
 behavioural specification, including every validation rule and the full
 PHPUnit test case list.
 
+## Development
+
+Developed with the assistance of [Claude Code](https://claude.com/claude-code).
+See [`CLAUDE.md`](CLAUDE.md) for the project context file used to guide it.
+
 ## License
 
 GPL v3 or later - see [`LICENSE`](LICENSE).
