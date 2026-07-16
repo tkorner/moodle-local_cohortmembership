@@ -51,7 +51,7 @@ add,hans.muster.zhaw,kurs-inf-2026
 del,hans.muster.zhaw,kurs-inf-2023
 ```
 
-Alternativ `cohortid` (numerisch) statt `cohortidnumber` — genau **eine** der beiden Kohorten-Spalten muss vorhanden sein (wie im Status quo). Bei beiden vorhandenen Spalten hat `cohortid` Vorrang, `cohortidnumber` wird ignoriert (im Report vermerken).
+Alternativ `cohortid` (numerisch) statt `cohortidnumber` — genau **eine** der beiden Kohorten-Spalten muss vorhanden sein (wie im Status quo). Bei beiden vorhandenen Spalten hat `cohortid` Vorrang, `cohortidnumber` wird ignoriert (im Report vermerken). Diese Präzedenz gilt auch pro Zeile: ist die `cohortid`-Spalte in der Datei vorhanden, aber in einer einzelnen Zeile leer oder nicht-numerisch, fällt diese Zeile **nicht** auf `cohortidnumber` zurück — sie ist `status_invalid`. Alles andere würde die Vorrang-Regel pro Zeile widersprüchlich zur dateiweiten Meldung machen.
 
 **User-Identifikation:** `username` (Status quo beibehalten). `idnumber`/`email` sind out of scope für v1.
 
