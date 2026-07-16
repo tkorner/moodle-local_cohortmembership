@@ -41,7 +41,7 @@ class processor {
      * below and is rejected before any row is touched.
      *
      * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
-     *                            'operation' => string|null]
+     *                            'operation' => string|null, 'cohortid_invalid' => bool|null]
      * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
      * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool,
      *                 'cohortidnumber_ignored' => bool, 'validation_error' => string|null]
@@ -50,6 +50,35 @@ class processor {
         global $CFG;
         require_once($CFG->dirroot . '/cohort/lib.php');
 
+        if (!$rows) {
+            return self::rejected($rows, false, 'error_empty_file');
+        }
+
+        $analysis = self::analyse_file($rows);
+        if ($analysis['error'] !== null) {
+            return self::rejected($rows, $analysis['legacy_format'], $analysis['error']);
+        }
+
+        if ($analysis['issync']) {
+            $payload = operation_sync::process($rows, $options);
+        } else {
+            $payload = self::process_delta($rows, $analysis['legacy_format'], $options);
+        }
+
+        $payload['cohortidnumber_ignored'] = $analysis['cohortidnumber_ignored'];
+        $payload['validation_error'] = null;
+        return $payload;
+    }
+
+    /**
+     * File-level analysis: legacy-format detection, cohort-column presence,
+     * and the sync/delta mix guard. Never touches the database.
+     *
+     * @param array $rows
+     * @return array ['legacy_format' => bool, 'cohortidnumber_ignored' => bool,
+     *                 'issync' => bool, 'error' => string|null]
+     */
+    private static function analyse_file(array $rows): array {
         // No row carries an 'operation' key at all -> legacy CSV, treat everything as 'del'.
         $legacyformat = true;
         foreach ($rows as $r) {
@@ -64,13 +93,11 @@ class processor {
         $hascohortid = false;
         $hascohortidnumber = false;
         foreach ($rows as $r) {
-            $hascohortid = $hascohortid || array_key_exists('cohortid', $r);
+            $hascohortid = $hascohortid || array_key_exists('cohortid', $r) || array_key_exists('cohortid_invalid', $r);
             $hascohortidnumber = $hascohortidnumber || array_key_exists('cohortidnumber', $r);
         }
-        $cohortidnumberignored = $hascohortid && $hascohortidnumber;
-
         if (!$hascohortid && !$hascohortidnumber) {
-            return self::rejected($rows, $legacyformat, 'error_missing_cohort_column');
+            return self::analysis($legacyformat, false, false, 'error_missing_cohort_column');
         }
 
         $ops = [];
@@ -79,19 +106,30 @@ class processor {
                 $ops[\core_text::strtolower(trim((string)($r['operation'] ?? '')))] = true;
             }
             if (isset($ops['sync']) && count($ops) > 1) {
-                return self::rejected($rows, $legacyformat, 'error_mixed_operations');
+                return self::analysis($legacyformat, false, false, 'error_mixed_operations');
             }
         }
 
-        if (count($ops) === 1 && isset($ops['sync'])) {
-            $payload = operation_sync::process($rows, $options);
-        } else {
-            $payload = self::process_delta($rows, $legacyformat, $options);
-        }
+        $issync = count($ops) === 1 && isset($ops['sync']);
+        return self::analysis($legacyformat, $hascohortid && $hascohortidnumber, $issync, null);
+    }
 
-        $payload['cohortidnumber_ignored'] = $cohortidnumberignored;
-        $payload['validation_error'] = null;
-        return $payload;
+    /**
+     * Build an analyse_file() result array.
+     *
+     * @param bool $legacyformat
+     * @param bool $cohortidnumberignored
+     * @param bool $issync
+     * @param string|null $error
+     * @return array
+     */
+    private static function analysis(bool $legacyformat, bool $cohortidnumberignored, bool $issync, ?string $error): array {
+        return [
+            'legacy_format' => $legacyformat,
+            'cohortidnumber_ignored' => $cohortidnumberignored,
+            'issync' => $issync,
+            'error' => $error,
+        ];
     }
 
     /**
@@ -127,92 +165,50 @@ class processor {
         $standardise = !empty($options['standardise']);
         $dryrun      = !empty($options['dryrun']);
 
-        $seenpairs = [];
-        $results   = [];
-        $counters  = ['total' => 0, 'valid' => 0, 'processed' => 0, 'skipped' => 0, 'errors' => 0];
+        $seenpairs   = [];
+        $usercache   = [];
+        $cohortcache = [];
+        $results     = [];
+        $counters    = ['total' => 0, 'valid' => 0, 'processed' => 0, 'skipped' => 0, 'errors' => 0];
 
         $transaction = $dryrun ? null : $DB->start_delegated_transaction();
 
         foreach ($rows as $r) {
             $counters['total']++;
+            $row = self::normalise_delta_row($r, $legacyformat, $standardise);
 
-            // Normalise input.
-            $username = isset($r['username']) ? trim((string)$r['username']) : '';
-            if ($standardise && $username !== '') {
-                $username = \core_text::strtolower($username);
-            }
-            $cohortid       = $r['cohortid'] ?? null;
-            $cohortidnumber = isset($r['cohortidnumber']) ? trim((string)$r['cohortidnumber']) : null;
-            $operation      = $legacyformat ? 'del' : \core_text::strtolower(trim((string)($r['operation'] ?? '')));
-
-            // Basic validation.
-            if ($username === '' || ($cohortid === null && ($cohortidnumber === null || $cohortidnumber === ''))) {
-                $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_invalid', 'cohortsync_warning' => false];
+            if (!$row['valid']) {
+                $results[] = self::deltarow($row, 'status_invalid');
                 $counters['errors']++;
                 $counters['skipped']++;
                 continue;
             }
 
             // De-duplicate within this run (same operation + same username/cohort pair).
-            $pairkey = $operation . '|' . $username . '|' . ($cohortid !== null ? ('id:' . $cohortid) : ('idn:' . $cohortidnumber));
+            // A duplicate is a benign skip, not an error - a repeated line should
+            // never trip cron/monitoring that treats an error count as fatal.
+            $pairkey = $row['operation'] . '|' . $row['username'] . '|' .
+                ($row['cohortid'] !== null ? ('id:' . $row['cohortid']) : ('idn:' . $row['cohortidnumber']));
             if (isset($seenpairs[$pairkey])) {
-                $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_duplicate', 'cohortsync_warning' => false];
-                $counters['errors']++;
+                $results[] = self::deltarow($row, 'status_duplicate');
                 $counters['skipped']++;
                 continue;
             }
             $seenpairs[$pairkey] = true;
 
-            // Resolve user.
-            $user = $DB->get_record('user', ['username' => $username, 'deleted' => 0], 'id', IGNORE_MISSING);
-            if (!$user) {
-                $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_usernotfound', 'cohortsync_warning' => false];
-                $counters['errors']++;
-                $counters['skipped']++;
-                continue;
-            }
+            $outcome = self::resolve_and_dispatch($row, $usercache, $cohortcache, $dryrun);
+            $row['cohortid'] = $outcome['cohortid'];
+            $status = $outcome['status'];
+            $results[] = self::deltarow($row, $status, $outcome['cohortsync_warning'] ?? false);
 
-            // Resolve cohort.
-            if ($cohortid !== null) {
-                $cohort = $DB->get_record('cohort', ['id' => $cohortid], 'id', IGNORE_MISSING);
-            } else {
-                $cohort = $DB->get_record('cohort', ['idnumber' => $cohortidnumber], 'id', IGNORE_MISSING);
-            }
-            if (!$cohort) {
-                $results[] = ['username' => $username, 'cohortid' => $cohortid, 'cohortidnumber' => $cohortidnumber,
-                    'operation' => $operation, 'status' => 'status_cohortnotfound', 'cohortsync_warning' => false];
-                $counters['errors']++;
-                $counters['skipped']++;
-                continue;
-            }
-
-            // Dispatch to the operation handler.
-            switch ($operation) {
-                case 'del':
-                    $opresult = operation_del::execute($cohort->id, $user->id, $dryrun);
-                    break;
-                case 'add':
-                    $opresult = operation_add::execute($cohort->id, $user->id, $dryrun);
-                    break;
-                default:
-                    $opresult = ['status' => 'error_bad_operation'];
-            }
-
-            $results[] = ['username' => $username, 'cohortid' => $cohort->id, 'cohortidnumber' => $cohortidnumber ?? '',
-                'operation' => $operation, 'status' => $opresult['status'],
-                'cohortsync_warning' => $opresult['cohortsync_warning'] ?? false];
-
-            if (in_array($opresult['status'], ['status_removed', 'status_added'], true)) {
+            if (in_array($status, ['status_removed', 'status_added'], true)) {
                 $counters['valid']++;
                 $counters['processed']++;
-            } else if (in_array($opresult['status'], ['status_notmember', 'status_alreadymember'], true)) {
+            } else if (in_array($status, ['status_notmember', 'status_alreadymember'], true)) {
                 $counters['valid']++;
                 $counters['skipped']++;
             } else {
-                // Covers error_bad_operation and any future unhandled status.
+                // Covers usernotfound, cohortnotfound, cohortambiguous, error_bad_operation.
                 $counters['errors']++;
                 $counters['skipped']++;
             }
@@ -223,5 +219,107 @@ class processor {
         }
 
         return ['results' => $results, 'counters' => $counters, 'legacy_format' => $legacyformat];
+    }
+
+    /**
+     * Normalise one delta row's input fields.
+     *
+     * @param array $r Raw row.
+     * @param bool $legacyformat
+     * @param bool $standardise
+     * @return array ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
+     *                 'operation' => string, 'valid' => bool]
+     */
+    private static function normalise_delta_row(array $r, bool $legacyformat, bool $standardise): array {
+        $username = isset($r['username']) ? trim((string)$r['username']) : '';
+        if ($standardise && $username !== '') {
+            $username = \core_text::strtolower($username);
+        }
+        $cohortidmalformed = !empty($r['cohortid_invalid']);
+        $cohortid          = $cohortidmalformed ? null : ($r['cohortid'] ?? null);
+        $cohortidnumber    = isset($r['cohortidnumber']) ? trim((string)$r['cohortidnumber']) : null;
+        $operation         = $legacyformat ? 'del' : \core_text::strtolower(trim((string)($r['operation'] ?? '')));
+
+        // A malformed cohortid cell (present column, non-numeric/blank value) is
+        // always invalid: it must never silently fall back to cohortidnumber,
+        // which would contradict the "cohortid always wins" precedence rule.
+        $hastarget = !$cohortidmalformed && ($cohortid !== null || ($cohortidnumber !== null && $cohortidnumber !== ''));
+        $valid     = $username !== '' && $hastarget;
+
+        return [
+            'username'       => $username,
+            'cohortid'       => $cohortid,
+            'cohortidnumber' => $cohortidnumber,
+            'operation'      => $operation,
+            'valid'          => $valid,
+        ];
+    }
+
+    /**
+     * Resolve the user and cohort for a normalised row and dispatch to the
+     * operation handler.
+     *
+     * @param array $row From normalise_delta_row().
+     * @param array $usercache Memoisation cache for username -> userid|false.
+     * @param array $cohortcache Memoisation cache for cohort_resolver.
+     * @param bool $dryrun
+     * @return array ['status' => string, 'cohortid' => int|null, 'cohortsync_warning' => bool]
+     */
+    private static function resolve_and_dispatch(array $row, array &$usercache, array &$cohortcache, bool $dryrun): array {
+        global $DB;
+
+        $username = $row['username'];
+        if (!array_key_exists($username, $usercache)) {
+            $user = $DB->get_record('user', ['username' => $username, 'deleted' => 0], 'id', IGNORE_MISSING);
+            $usercache[$username] = $user ? (int)$user->id : false;
+        }
+        $userid = $usercache[$username];
+        if ($userid === false) {
+            return ['status' => 'status_usernotfound', 'cohortid' => $row['cohortid']];
+        }
+
+        $cohort = cohort_resolver::resolve($row['cohortid'], $row['cohortidnumber'], $cohortcache);
+        if ($cohort['status'] === 'ambiguous') {
+            return ['status' => 'status_cohortambiguous', 'cohortid' => $row['cohortid']];
+        }
+        if ($cohort['status'] === 'notfound') {
+            return ['status' => 'status_cohortnotfound', 'cohortid' => $row['cohortid']];
+        }
+
+        switch ($row['operation']) {
+            case 'del':
+                $opresult = operation_del::execute($cohort['id'], $userid, $dryrun);
+                break;
+            case 'add':
+                $opresult = operation_add::execute($cohort['id'], $userid, $dryrun);
+                break;
+            default:
+                return ['status' => 'error_bad_operation', 'cohortid' => $cohort['id']];
+        }
+
+        return [
+            'status'             => $opresult['status'],
+            'cohortid'           => $cohort['id'],
+            'cohortsync_warning' => $opresult['cohortsync_warning'] ?? false,
+        ];
+    }
+
+    /**
+     * Build a report row for a normalised delta row.
+     *
+     * @param array $row From normalise_delta_row().
+     * @param string $status
+     * @param bool $warning
+     * @return array
+     */
+    private static function deltarow(array $row, string $status, bool $warning = false): array {
+        return [
+            'username'           => $row['username'],
+            'cohortid'           => $row['cohortid'],
+            'cohortidnumber'     => $row['cohortidnumber'] ?? '',
+            'operation'          => $row['operation'],
+            'status'             => $status,
+            'cohortsync_warning' => $warning,
+        ];
     }
 }
