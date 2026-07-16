@@ -175,6 +175,78 @@ final class operation_sync_test extends \advanced_testcase {
     }
 
     /**
+     * A sync dry run must not change the database - the most dangerous path in
+     * the plugin, since sync can remove memberships no row explicitly names.
+     *
+     * @covers \local_cohortmembership\local\operation_sync::process
+     * @return void
+     */
+    public function test_sync_dry_run_does_not_change_database(): void {
+        $this->resetAfterTest(true);
+
+        $user = $this->getDataGenerator()->create_user(['username' => 'hans']);
+        $keep = $this->getDataGenerator()->create_cohort(['idnumber' => 'kurs-inf-2026']);
+        $drop = $this->getDataGenerator()->create_cohort(['idnumber' => 'kurs-bwl-2026']);
+        $add  = $this->getDataGenerator()->create_cohort(['idnumber' => 'basis-alle']);
+        cohort_add_member($keep->id, $user->id);
+        cohort_add_member($drop->id, $user->id);
+
+        // Universe = {kurs-inf-2026, kurs-bwl-2026, basis-alle} - kurs-bwl-2026
+        // only joins the universe via anna's row; hans's own rows omit it
+        // (should be removed) and add basis-alle (should be added).
+        $rows = [
+            ['username' => 'hans', 'cohortidnumber' => 'kurs-inf-2026', 'operation' => 'sync'],
+            ['username' => 'hans', 'cohortidnumber' => 'basis-alle', 'operation' => 'sync'],
+            ['username' => 'anna', 'cohortidnumber' => 'kurs-bwl-2026', 'operation' => 'sync'],
+        ];
+        $this->getDataGenerator()->create_user(['username' => 'anna']);
+
+        $payload = processor::process($rows, ['dryrun' => true]);
+
+        $map = $this->status_by_username_cohort($payload['results']);
+        $this->assertSame('status_alreadymember', $map['hans|' . $keep->id] ?? null);
+        $this->assertSame('status_added', $map['hans|' . $add->id] ?? null);
+        $this->assertSame('status_removed', $map['hans|' . $drop->id] ?? null);
+
+        // Nothing in the database actually changed.
+        $this->assertTrue($this->record_exists('cohort_members', ['cohortid' => $keep->id, 'userid' => $user->id]));
+        $this->assertTrue($this->record_exists('cohort_members', ['cohortid' => $drop->id, 'userid' => $user->id]));
+        $this->assertFalse($this->record_exists('cohort_members', ['cohortid' => $add->id, 'userid' => $user->id]));
+    }
+
+    /**
+     * A row for an unknown username still resolves and contributes its cohort
+     * to the file-wide universe (SPEC §3.2: the universe is every cohort named
+     * anywhere in the file, not just in rows for users that exist). This is a
+     * deliberate, spec-literal choice, not a bug: it is exercised here so a
+     * change in behaviour is a conscious decision, not an accident.
+     *
+     * @covers \local_cohortmembership\local\operation_sync::process
+     * @return void
+     */
+    public function test_unknown_user_row_still_contributes_cohort_to_universe(): void {
+        $this->resetAfterTest(true);
+
+        $hans = $this->getDataGenerator()->create_user(['username' => 'hans']);
+        $shared = $this->getDataGenerator()->create_cohort(['idnumber' => 'kurs-bwl-2026']);
+        cohort_add_member($shared->id, $hans->id);
+
+        // The username 'nobody' does not exist, but still names kurs-bwl-2026,
+        // putting it in the universe. Hans does not list it among his own rows,
+        // so it must be removed from him even though the only other row naming
+        // it belongs to a user who fails to resolve.
+        $rows = [
+            ['username' => 'hans', 'cohortidnumber' => 'kurs-inf-2026', 'operation' => 'sync'],
+            ['username' => 'nobody', 'cohortidnumber' => 'kurs-bwl-2026', 'operation' => 'sync'],
+        ];
+        $this->getDataGenerator()->create_cohort(['idnumber' => 'kurs-inf-2026']);
+
+        $payload = processor::process($rows, ['dryrun' => false]);
+
+        $this->assertFalse($this->record_exists('cohort_members', ['cohortid' => $shared->id, 'userid' => $hans->id]));
+    }
+
+    /**
      * A sync-triggered removal must carry the cohort-sync warning flag, same
      * as a 'del' removal (CLAUDE.md §Kritische Fachlogik: required for
      * every removal, not just explicit 'del' rows).
