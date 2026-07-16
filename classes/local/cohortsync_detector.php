@@ -47,6 +47,13 @@ final class cohortsync_detector {
         require_once($CFG->dirroot . '/lib/enrollib.php');
 
         if (!array_key_exists($cohortid, self::$cache)) {
+            // A site-wide disabled enrol_cohort plugin means none of its instances
+            // actually run, regardless of their individual 'status' field.
+            if (!enrol_is_enabled('cohort')) {
+                self::$cache[$cohortid] = [];
+                return self::$cache[$cohortid];
+            }
+
             $courseids = $DB->get_fieldset_sql(
                 'SELECT DISTINCT e.courseid
                    FROM {enrol} e
