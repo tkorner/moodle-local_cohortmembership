@@ -22,17 +22,47 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require(__DIR__ . '/../../config.php');
+require_once($CFG->libdir . '/csvlib.class.php');
+require_once($CFG->dirroot . '/cohort/lib.php');
 
-require_login();
+// Sets up require_login() plus the capability check for 'local/cohortmembership:manage'
+// declared in settings.php, plus the admin breadcrumb/nav highlighting a manual
+// require_login()/set_url() never gets.
+admin_externalpage_setup('local_cohortmembership');
 $context = context_system::instance();
-
-// Page access capability (plugin) + cohort assignment capability (core).
-require_capability('local/cohortmembership:manage', $context);
 require_capability('moodle/cohort:assign', $context);
 
-$PAGE->set_url(new moodle_url('/local/cohortmembership/index.php'));
-$PAGE->set_context($context);
+// Handle secure CSV download of the last run's results (stored in session),
+// before any HTML output: csv_export_writer::download_file() sends its own
+// headers and must run before $OUTPUT->header() does.
+$download = optional_param('download', 0, PARAM_BOOL);
+if ($download) {
+    require_sesskey(); // CSRF protection for the download action.
+
+    if (!empty($SESSION->local_cohortmembership_report)) {
+        $stored = $SESSION->local_cohortmembership_report;
+        $export = new csv_export_writer();
+        $export->set_filename('cohort_membership_results');
+        $export->add_data(['username', 'cohortid', 'cohortidnumber', 'operation', 'status', 'cohortsyncwarning']);
+
+        foreach ($stored['rows'] as $r) {
+            $export->add_data([
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['username'] ?? ''),
+                isset($r['cohortid']) ? (string)$r['cohortid'] : '',
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['cohortidnumber'] ?? ''),
+                $r['operation'] ?? '',
+                $r['status_readable'] ?? ($r['status'] ?? ''),
+                !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),
+            ]);
+        }
+        // The download consumes the stored report; a second click just falls through to the form.
+        unset($SESSION->local_cohortmembership_report);
+        $export->download_file();
+        exit;
+    }
+}
+
 $PAGE->set_title(get_string('pluginname', 'local_cohortmembership'));
 // Heading is left empty here and printed below via heading_with_help() instead: set_heading()
 // sanitises its argument (format_string()/clean_text()), which strips the data-bs-* attributes
@@ -46,38 +76,8 @@ echo $OUTPUT->heading_with_help(
     'local_cohortmembership'
 );
 
-// Libs needed below.
-require_once($CFG->libdir . '/csvlib.class.php');
-require_once($CFG->dirroot . '/cohort/lib.php');
-
 // Load the upload form (namespaced moodleform subclass).
 $mform = new \local_cohortmembership\form\upload_form();
-
-// Handle secure CSV download of the last run's results (stored in session).
-$download = optional_param('download', 0, PARAM_BOOL);
-if ($download) {
-    require_sesskey(); // CSRF protection for the download action.
-
-    if (!empty($SESSION->local_cohortmembership_report)) {
-        $rows = $SESSION->local_cohortmembership_report['rows'] ?? [];
-        $export = new csv_export_writer();
-        $export->set_filename('cohort_membership_results');
-        $export->add_data(['username', 'cohortid', 'cohortidnumber', 'operation', 'status', 'cohortsyncwarning']);
-
-        foreach ($rows as $r) {
-            $export->add_data([
-                $r['username'] ?? '',
-                isset($r['cohortid']) ? (string)$r['cohortid'] : '',
-                $r['cohortidnumber'] ?? '',
-                $r['operation'] ?? '',
-                $r['status_readable'] ?? ($r['status'] ?? ''),
-                !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),
-            ]);
-        }
-        $export->download_file();
-        exit;
-    }
-}
 
 // Standard moodleform flow.
 if ($mform->is_cancelled()) {
@@ -101,10 +101,18 @@ if ($mform->is_cancelled()) {
 
     $encoding = 'utf-8';
     $delimiter = $data->delimiter ?? 'comma'; // Choices 'comma'|'semicolon'|'tab' as provided by core.
-    $cir->load_csv_content($filecontent, $encoding, $delimiter);
+    if ($cir->load_csv_content($filecontent, $encoding, $delimiter) === false) {
+        echo $OUTPUT->notification($cir->get_error() ?: get_string('error_headers', 'local_cohortmembership'), 'error');
+        $cir->close();
+        $cir->cleanup();
+        $mform->display();
+        echo $OUTPUT->footer();
+        exit;
+    }
 
     // Read header columns and initialise iterator.
-    $columns = array_map('strtolower', $cir->get_columns() ?? []);
+    // get_columns() returns false (not null) on failure, so ?? [] would not catch it.
+    $columns = array_map('strtolower', $cir->get_columns() ?: []);
     $cir->init();
 
     // Validate required headers. The full sync/delta + column validation
@@ -136,6 +144,8 @@ if ($mform->is_cancelled()) {
             $rawid = trim((string)($row[$colmap['cohortid']] ?? ''));
             if ($rawid !== '' && ctype_digit($rawid)) {
                 $rec['cohortid'] = (int)$rawid;
+            } else {
+                $rec['cohortid_invalid'] = true;
             }
         }
         if ($hasidnumber) {
@@ -180,31 +190,42 @@ if ($mform->is_cancelled()) {
     }
     unset($r);
 
-    // Persist for CSV download.
-    $SESSION->local_cohortmembership_report = ['rows' => $results, 'counters' => $counters];
+    // Persist for CSV download and for rendering the report after the redirect below.
+    $SESSION->local_cohortmembership_report = [
+        'rows' => $results,
+        'counters' => $counters,
+        'legacy_format' => $payload['legacy_format'],
+        'cohortidnumber_ignored' => $payload['cohortidnumber_ignored'],
+        'dryrun' => $dryrun,
+    ];
 
-    // Informational notices.
-    if ($payload['legacy_format']) {
+    // Post/Redirect/Get: without this, refreshing the browser after a live run
+    // would resubmit the form and re-run the import (sync would re-run its
+    // implicit removals, every event re-fires). Render from $SESSION instead.
+    redirect(new moodle_url('/local/cohortmembership/index.php', ['report' => 1]));
+} else if (optional_param('report', 0, PARAM_BOOL) && !empty($SESSION->local_cohortmembership_report)) {
+    // Rendering the outcome of the run that redirected here, from $SESSION.
+    $stored = $SESSION->local_cohortmembership_report;
+
+    if ($stored['legacy_format']) {
         echo $OUTPUT->notification(get_string('legacy_format_notice', 'local_cohortmembership'), 'info');
     }
-    if ($payload['cohortidnumber_ignored']) {
+    if ($stored['cohortidnumber_ignored']) {
         echo $OUTPUT->notification(get_string('cohortidnumber_ignored_notice', 'local_cohortmembership'), 'info');
     }
-    if ($dryrun) {
+    if ($stored['dryrun']) {
         echo $OUTPUT->notification(get_string('dryrun_notice', 'local_cohortmembership'), 'info');
     }
 
     // Render the summary + table via plugin renderer and Mustache template.
     $renderer = $PAGE->get_renderer('local_cohortmembership');
-    echo $renderer->report(new \local_cohortmembership\output\report($results, $counters));
+    echo $renderer->report(new \local_cohortmembership\output\report($stored['rows'], $stored['counters']));
 
     // Download button (protected by sesskey) and back-to-upload button.
     $dlurl = new moodle_url('/local/cohortmembership/index.php', ['download' => 1, 'sesskey' => sesskey()]);
     echo $OUTPUT->single_button($dlurl, get_string('download', 'local_cohortmembership'));
     echo $OUTPUT->single_button(
-        new moodle_url(
-            '/local/cohortmembership/index.php'
-        ),
+        new moodle_url('/local/cohortmembership/index.php'),
         get_string('uploadcsv', 'local_cohortmembership')
     );
 } else {
