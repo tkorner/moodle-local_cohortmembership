@@ -30,7 +30,7 @@ require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->libdir . '/csvlib.class.php');
 
 /**
- * Upload form for cohort unenroller CSV.
+ * Upload form for the cohort membership CSV.
  */
 class upload_form extends \moodleform {
     /**
@@ -51,12 +51,12 @@ class upload_form extends \moodleform {
         );
 
         // Downloadable example files, same pattern as core's "Upload users" (tool_uploaduser).
-        $addcsvurl = new \moodle_url('example-add-del.csv');
+        $addcsvurl = new \moodle_url('/local/cohortmembership/example-add-del.csv');
         $addcsvlink = \html_writer::link($addcsvurl, 'example-add-del.csv');
         $mform->addElement('static', 'exampleaddcsv', get_string('exampleaddcsv', 'local_cohortmembership'), $addcsvlink);
         $mform->addHelpButton('exampleaddcsv', 'exampleaddcsv', 'local_cohortmembership');
 
-        $synccsvurl = new \moodle_url('example-sync.csv');
+        $synccsvurl = new \moodle_url('/local/cohortmembership/example-sync.csv');
         $synccsvlink = \html_writer::link($synccsvurl, 'example-sync.csv');
         $mform->addElement('static', 'examplesynccsv', get_string('examplesynccsv', 'local_cohortmembership'), $synccsvlink);
         $mform->addHelpButton('examplesynccsv', 'examplesynccsv', 'local_cohortmembership');
@@ -83,11 +83,15 @@ class upload_form extends \moodleform {
         );
         $mform->setDefault('delimiter', 'comma');
 
-        // Username normalisation (trim + lowercase).
+        // Username normalisation (trim + lowercase). Defaults on: Moodle usernames
+        // are effectively case-insensitive, so this avoids surprise mismatches.
         $mform->addElement('advcheckbox', 'standardise', get_string('standardise_usernames', 'local_cohortmembership'), '');
+        $mform->setDefault('standardise', 1);
 
-        // Dry run (no DB changes).
+        // Dry run (no DB changes). Defaults on (SPEC guardrail): this is the
+        // only safeguard against sync's implicit removals on a first live run.
         $mform->addElement('advcheckbox', 'dryrun', get_string('dryrun', 'local_cohortmembership'), '');
+        $mform->setDefault('dryrun', 1);
 
         // Submit.
         $mform->addElement('submit', 'submitbutton', get_string('submit', 'local_cohortmembership'));

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Renderer file.
+ * Report renderable file.
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>

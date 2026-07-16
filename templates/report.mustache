@@ -8,8 +8,19 @@
             "valid": 1,
             "processed": 1,
             "skipped": 0,
-            "errors": 0
-        }
+            "errors": 0,
+            "warnings": 0
+        },
+        "rows": [
+            {
+                "username": "hans.muster",
+                "cohortid": "3",
+                "cohortidnumber": "kurs-inf-2026",
+                "operation": "add",
+                "status_readable": "Added",
+                "cohortsync_warning": false
+            }
+        ]
     }
 }}
 <div class="local-cohortmembership-report">
@@ -30,8 +41,8 @@
         <th>cohortid</th>
         <th>cohortidnumber</th>
         <th>operation</th>
-        <th>status</th>
-        <th>cohort-sync</th>
+        <th>{{#str}} status, moodle {{/str}}</th>
+        <th>{{#str}} cohortsynccolumn, local_cohortmembership {{/str}}</th>
       </tr>
     </thead>
     <tbody>
