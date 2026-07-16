@@ -1,2 +1,10 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Development-only docs: never ship inside the plugin zip built from a git
+# archive (moodle.org plugin directory, `git archive`, etc). CLAUDE.md in
+# particular contains local machine paths and an in-progress rename narrative
+# that only make sense during development.
+CLAUDE.md export-ignore
+SPEC-cohortmembership.md export-ignore
+claude-code-prompt.md export-ignore

@@ -36,5 +36,6 @@ $capabilities = [
         'archetypes'   => [
             'manager' => CAP_ALLOW,
         ],
+        'clonepermissionsfrom' => 'moodle/cohort:assign',
     ],
 ];

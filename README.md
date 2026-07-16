@@ -166,9 +166,9 @@ plus a live CLI smoke test against each:
 
 | Moodle version | Result |
 |---|---|
-| 5.0.8+ | ✅ PHPUnit 33/33, CLI smoke test (real DB changes verified) |
-| 5.1.5+ | ✅ PHPUnit 33/33 |
-| 5.2.1+ | ✅ PHPUnit 33/33 (also the primary dev/live-verification target throughout development) |
+| 5.0.8+ | ✅ PHPUnit 34/34, CLI smoke test (real DB changes verified) |
+| 5.1.5+ | ✅ PHPUnit 34/34 |
+| 5.2.1+ | ✅ PHPUnit 34/34 (also the primary dev/live-verification target throughout development) |
 
 Moodle 5.1 introduced a `public/` web-root split (the actual codebase
 moves one level down, e.g. `public/local/...`); this plugin has no

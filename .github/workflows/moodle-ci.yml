@@ -109,7 +109,6 @@ jobs:
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
-          IGNORE_PATHS: 'templates/local/mobile'
           PHPDOCCHECKER_IGNORE_PATHS: /^vendor/
 
       - name: PHP Lint
