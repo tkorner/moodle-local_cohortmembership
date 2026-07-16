@@ -33,31 +33,31 @@ admin_externalpage_setup('local_cohortmembership');
 $context = context_system::instance();
 require_capability('moodle/cohort:assign', $context);
 
-// Handle secure CSV download of the last run's results (stored in session),
-// before any HTML output: csv_export_writer::download_file() sends its own
-// headers and must run before $OUTPUT->header() does.
+// Handle secure CSV download of the last run's results (stored in a per-session
+// temp file, see report_store), before any HTML output: csv_export_writer::
+// download_file() sends its own headers and must run before $OUTPUT->header() does.
 $download = optional_param('download', 0, PARAM_BOOL);
 if ($download) {
     require_sesskey(); // CSRF protection for the download action.
 
-    if (!empty($SESSION->local_cohortmembership_report)) {
-        $stored = $SESSION->local_cohortmembership_report;
+    $stored = \local_cohortmembership\local\report_store::load(sesskey());
+    if ($stored !== null) {
         $export = new csv_export_writer();
         $export->set_filename('cohort_membership_results');
         $export->add_data(['username', 'cohortid', 'cohortidnumber', 'operation', 'status', 'cohortsyncwarning']);
 
         foreach ($stored['rows'] as $r) {
             $export->add_data([
-                \local_cohortmembership\local\csv_util::sanitise_cell($r['username'] ?? ''),
+                \core\dataformat::escape_spreadsheet_formula($r['username'] ?? ''),
                 isset($r['cohortid']) ? (string)$r['cohortid'] : '',
-                \local_cohortmembership\local\csv_util::sanitise_cell($r['cohortidnumber'] ?? ''),
+                \core\dataformat::escape_spreadsheet_formula($r['cohortidnumber'] ?? ''),
                 $r['operation'] ?? '',
                 $r['status_readable'] ?? ($r['status'] ?? ''),
                 !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),
             ]);
         }
         // The download consumes the stored report; a second click just falls through to the form.
-        unset($SESSION->local_cohortmembership_report);
+        \local_cohortmembership\local\report_store::delete(sesskey());
         $export->download_file();
         exit;
     }
@@ -190,22 +190,27 @@ if ($mform->is_cancelled()) {
     }
     unset($r);
 
-    // Persist for CSV download and for rendering the report after the redirect below.
-    $SESSION->local_cohortmembership_report = [
+    // Persist for CSV download and for rendering the report after the redirect
+    // below. A temp file rather than $SESSION: a large run (tens of thousands
+    // of rows) would otherwise bloat the session store for the rest of the
+    // user's session, not just for this one report.
+    \local_cohortmembership\local\report_store::save(sesskey(), [
         'rows' => $results,
         'counters' => $counters,
         'legacy_format' => $payload['legacy_format'],
         'cohortidnumber_ignored' => $payload['cohortidnumber_ignored'],
         'dryrun' => $dryrun,
-    ];
+    ]);
 
     // Post/Redirect/Get: without this, refreshing the browser after a live run
     // would resubmit the form and re-run the import (sync would re-run its
-    // implicit removals, every event re-fires). Render from $SESSION instead.
+    // implicit removals, every event re-fires). Render from the stored report instead.
     redirect(new moodle_url('/local/cohortmembership/index.php', ['report' => 1]));
-} else if (optional_param('report', 0, PARAM_BOOL) && !empty($SESSION->local_cohortmembership_report)) {
-    // Rendering the outcome of the run that redirected here, from $SESSION.
-    $stored = $SESSION->local_cohortmembership_report;
+} else if (
+    optional_param('report', 0, PARAM_BOOL)
+        && ($stored = \local_cohortmembership\local\report_store::load(sesskey()))
+) {
+    // Rendering the outcome of the run that redirected here.
 
     if ($stored['legacy_format']) {
         echo $OUTPUT->notification(get_string('legacy_format_notice', 'local_cohortmembership'), 'info');
