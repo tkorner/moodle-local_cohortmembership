@@ -210,9 +210,9 @@ if (!empty($reportpath)) {
                 $status = get_string('dryrun_status', 'local_cohortmembership', $status);
             }
             fputcsv($fp, [
-                \local_cohortmembership\local\csv_util::sanitise_cell($r['username'] ?? ''),
+                \core\dataformat::escape_spreadsheet_formula($r['username'] ?? ''),
                 isset($r['cohortid']) ? (string)$r['cohortid'] : '',
-                \local_cohortmembership\local\csv_util::sanitise_cell($r['cohortidnumber'] ?? ''),
+                \core\dataformat::escape_spreadsheet_formula($r['cohortidnumber'] ?? ''),
                 $status,
             ]);
         }
