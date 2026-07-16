@@ -46,6 +46,11 @@ use local_cohortmembership\local\processor;
     ]
 );
 
+if ($unrecognized) {
+    $unrecognized = implode("\n  ", $unrecognized);
+    cli_error(get_string('cliunknowoption', 'core_admin', $unrecognized));
+}
+
 $help = "Cohort Membership (CLI)
 Adds, removes, or syncs users' cohort memberships by CSV mapping (username +
 cohort id or idnumber, plus an optional operation column).
@@ -109,10 +114,15 @@ $iid = csv_import_reader::get_new_iid('local_cohortmembership_cli');
 $cir = new csv_import_reader($iid, 'local_cohortmembership_cli');
 
 $encoding = 'utf-8';
-$cir->load_csv_content($content, $encoding, $delimiter);
+if ($cir->load_csv_content($content, $encoding, $delimiter) === false) {
+    $cir->close();
+    $cir->cleanup();
+    cli_error($cir->get_error() ?: "Could not parse CSV: {$csvpath}", 5);
+}
 
 // Read header columns and initialise iterator (required before next()).
-$columns = array_map('strtolower', $cir->get_columns() ?? []);
+// get_columns() returns false (not null) on failure, so ?? [] would not catch it.
+$columns = array_map('strtolower', $cir->get_columns() ?: []);
 $cir->init();
 
 // Validate required headers. The remaining file-level validation (mix guard,
@@ -123,7 +133,7 @@ $hasoperation = in_array('operation', $columns, true);
 if (!in_array('username', $columns, true) || (!$hasid && !$hasidnumber)) {
     $cir->close();
     $cir->cleanup();
-    cli_error("Invalid headers. Expect 'username,cohortid' or 'username,cohortidnumber' (optionally + 'operation').", 5);
+    cli_error("Invalid headers. Expect 'username,cohortid' or 'username,cohortidnumber' (optionally + 'operation').", 6);
 }
 
 // Map columns and collect normalised records for the processor.
@@ -138,6 +148,8 @@ while ($row = $cir->next()) {
         $rawid = trim((string)($row[$colmap['cohortid']] ?? ''));
         if ($rawid !== '' && ctype_digit($rawid)) {
             $rec['cohortid'] = (int)$rawid;
+        } else {
+            $rec['cohortid_invalid'] = true;
         }
     }
     if ($hasidnumber) {
@@ -160,7 +172,7 @@ $payload = processor::process($rows, [
 
 // A file-level validation failure means nothing was processed at all.
 if ($payload['validation_error'] !== null) {
-    cli_error(get_string($payload['validation_error'], 'local_cohortmembership'), 6);
+    cli_error(get_string($payload['validation_error'], 'local_cohortmembership'), 7);
 }
 
 $results = $payload['results'];
@@ -205,9 +217,9 @@ if (!empty($reportpath)) {
                 $status = get_string('dryrun_status', 'local_cohortmembership', $status);
             }
             fputcsv($fp, [
-                $r['username'] ?? '',
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['username'] ?? ''),
                 isset($r['cohortid']) ? (string)$r['cohortid'] : '',
-                $r['cohortidnumber'] ?? '',
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['cohortidnumber'] ?? ''),
                 $r['operation'] ?? '',
                 $status,
                 !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),

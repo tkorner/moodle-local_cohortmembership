@@ -46,6 +46,11 @@ use local_cohortmembership\local\processor;
     ]
 );
 
+if ($unrecognized) {
+    $unrecognized = implode("\n  ", $unrecognized);
+    cli_error(get_string('cliunknowoption', 'core_admin', $unrecognized));
+}
+
 $help = "Cohort Unenroller (CLI)
 Removes users from cohorts by CSV mapping (username + cohort id or idnumber).
 
@@ -108,10 +113,15 @@ $iid = csv_import_reader::get_new_iid('local_cohortmembership_cli');
 $cir = new csv_import_reader($iid, 'local_cohortmembership_cli');
 
 $encoding = 'utf-8';
-$cir->load_csv_content($content, $encoding, $delimiter);
+if ($cir->load_csv_content($content, $encoding, $delimiter) === false) {
+    $cir->close();
+    $cir->cleanup();
+    cli_error($cir->get_error() ?: "Could not parse CSV: {$csvpath}", 5);
+}
 
 // Read header columns and initialise iterator (required before next()).
-$columns = array_map('strtolower', $cir->get_columns() ?? []);
+// get_columns() returns false (not null) on failure, so ?? [] would not catch it.
+$columns = array_map('strtolower', $cir->get_columns() ?: []);
 $cir->init();
 
 // Validate required headers.
@@ -120,7 +130,20 @@ $hasidnumber = in_array('cohortidnumber', $columns, true);
 if (!in_array('username', $columns, true) || (!$hasid && !$hasidnumber)) {
     $cir->close();
     $cir->cleanup();
-    cli_error("Invalid headers. Expect 'username,cohortid' or 'username,cohortidnumber'.", 5);
+    cli_error("Invalid headers. Expect 'username,cohortid' or 'username,cohortidnumber'.", 6);
+}
+
+// This script always treats every row as 'del' - it never looks at an 'operation'
+// column. Silently reinterpreting add/sync rows as del would delete memberships
+// the CSV never asked to remove. Point the operator at the script that understands it.
+if (in_array('operation', $columns, true)) {
+    $cir->close();
+    $cir->cleanup();
+    cli_error(
+        "This CSV has an 'operation' column (add/del/sync). unenrol.php always treats every row " .
+        "as 'del' and ignores that column - use cli/membership.php instead.",
+        7
+    );
 }
 
 // Map columns and collect normalised records for the processor.
@@ -135,6 +158,8 @@ while ($row = $cir->next()) {
         $rawid = trim((string)($row[$colmap['cohortid']] ?? ''));
         if ($rawid !== '' && ctype_digit($rawid)) {
             $rec['cohortid'] = (int)$rawid;
+        } else {
+            $rec['cohortid_invalid'] = true;
         }
     }
     if ($hasidnumber) {
@@ -151,6 +176,11 @@ $payload = processor::process($rows, [
     'standardise' => $standardise,
     'dryrun' => $dryrun,
 ]);
+
+// A file-level validation failure means nothing was processed at all.
+if ($payload['validation_error'] !== null) {
+    cli_error(get_string($payload['validation_error'], 'local_cohortmembership'), 8);
+}
 
 $results = $payload['results'];
 $counters = $payload['counters'];
@@ -173,23 +203,17 @@ if (!empty($reportpath)) {
     if (!is_dir($dir) || !is_writable($dir)) {
         cli_problem("Report path not writable: {$reportpath}");
     } else if ($fp = fopen($reportpath, 'w')) {
-        // Human-friendly English statuses (CLI context).
-        $map = [
-            'status_removed'        => 'Removed',
-            'status_notmember'      => 'User not a member',
-            'status_usernotfound'   => 'User not found',
-            'status_cohortnotfound' => 'Cohort not found',
-            'status_duplicate'      => 'Duplicate in file',
-            'status_invalid'        => 'Invalid data',
-        ];
-
         fputcsv($fp, ['username', 'cohortid', 'cohortidnumber', 'status']);
         foreach ($results as $r) {
+            $status = get_string($r['status'], 'local_cohortmembership');
+            if ($dryrun) {
+                $status = get_string('dryrun_status', 'local_cohortmembership', $status);
+            }
             fputcsv($fp, [
-                $r['username'] ?? '',
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['username'] ?? ''),
                 isset($r['cohortid']) ? (string)$r['cohortid'] : '',
-                $r['cohortidnumber'] ?? '',
-                $map[$r['status']] ?? $r['status'],
+                \local_cohortmembership\local\csv_util::sanitise_cell($r['cohortidnumber'] ?? ''),
+                $status,
             ]);
         }
         fclose($fp);
