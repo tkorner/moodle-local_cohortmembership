@@ -35,6 +35,7 @@ $string['cohortsync_warning_notice'] = 'Das Entfernen eines Nutzers aus einer gl
     . 'aktive "Cohort-Sync"-Einschreibemethode mit einem Kurs verknüpft ist, kann ihn auch aus diesem Kurs '
     . 'abmelden - inklusive Bewertungen und Gruppenzugehörigkeiten. Erstellen Sie vor einem echten Lauf ein '
     . 'Datenbank-Backup.';
+$string['cohortsynccolumn'] = 'Cohort-Sync';
 $string['csvhelp'] = 'CSV-Spalten: username,(cohortid ODER cohortidnumber)[,operation]. operation ist eines von '
     . 'add/del/sync; fehlt die Spalte, wird jede Zeile als del behandelt.';
 $string['delimiter'] = 'CSV-Trennzeichen';
@@ -43,6 +44,7 @@ $string['dryrun'] = 'Testlauf (keine Änderungen)';
 $string['dryrun_notice'] = 'Testlauf: es wurden keine Änderungen vorgenommen.';
 $string['dryrun_status'] = '(Testlauf) {$a}';
 $string['error_bad_operation'] = 'Unbekannte Operation';
+$string['error_empty_file'] = 'Die CSV-Datei enthält keine Datenzeilen.';
 $string['error_headers'] = 'Fehlende Spalten: erwartet werden username,cohortid oder username,cohortidnumber';
 $string['error_missing_cohort_column'] = 'Fehlende Spalten: erwartet wird eine "cohortid"- oder '
     . '"cohortidnumber"-Spalte.';
@@ -59,14 +61,12 @@ $string['examplesynccsv_help'] = 'Diese Datei herunterladen, mit einem Text- ode
     . 'Wichtig: sync-Zeilen desselben Nutzers listen dessen vollständige Soll-Menge an globalen Gruppen.';
 $string['legacy_format_notice'] = 'Keine "operation"-Spalte gefunden: alle Zeilen wurden aus '
     . 'Kompatibilitätsgründen als "del" verarbeitet.';
-$string['menulink'] = 'Mitgliedschaft globaler Gruppen';
 $string['pageheading'] = 'Mitgliedschaft globaler Gruppen';
 $string['pluginname'] = 'Mitgliedschaft globaler Gruppen';
 $string['pluginname_help'] = 'Verwaltet Mitgliedschaften in globalen Gruppen (Hinzufügen, Entfernen, Sync) per '
     . 'CSV-Upload. Die vollständige Dokumentation, CSV-Format-Beispiele und Spezifikation finden Sie im '
     . '[Plugin-Repository auf GitHub](https://github.com/tkorner/moodle-local_cohortmembership).';
 $string['privacy:metadata'] = 'Dieses Plugin speichert keine personenbezogenen Daten.';
-$string['results'] = 'Ergebnisse';
 $string['rows_errors'] = 'Zeilen mit Fehlern';
 $string['rows_processed'] = 'Verarbeitete Zeilen';
 $string['rows_skipped'] = 'Übersprungene Zeilen';
@@ -76,6 +76,7 @@ $string['rows_warnings'] = 'Entfernungen mit Cohort-Sync-Warnung';
 $string['standardise_usernames'] = 'Nutzernamen normalisieren (Leerzeichen entfernen, kleinschreiben)';
 $string['status_added'] = 'Hinzugefügt';
 $string['status_alreadymember'] = 'Bereits Mitglied';
+$string['status_cohortambiguous'] = 'Globale-Gruppen-ID ist mehrdeutig (mehr als eine Gruppe verwendet sie)';
 $string['status_cohortnotfound'] = 'Globale Gruppe nicht gefunden';
 $string['status_duplicate'] = 'Duplikat in der Datei';
 $string['status_invalid'] = 'Ungültige Daten';

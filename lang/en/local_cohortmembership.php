@@ -27,6 +27,7 @@ $string['cohortmembership:manage'] = 'Manage cohort memberships (add/remove/sync
 $string['cohortsync_warning_notice'] = 'Removing a user from a cohort used by an active "Cohort sync" enrolment '
     . 'method can also unenrol them from the linked course, along with their grades and group memberships. '
     . 'Consider taking a database backup before running this in live mode.';
+$string['cohortsynccolumn'] = 'Cohort-sync';
 $string['csvhelp'] = 'CSV headers: username,(cohortid OR cohortidnumber)[,operation]. operation is one of '
     . 'add/del/sync; if the column is omitted, every row is treated as del.';
 $string['delimiter'] = 'CSV delimiter';
@@ -35,6 +36,7 @@ $string['dryrun'] = 'Dry run (no changes)';
 $string['dryrun_notice'] = 'Dry run: no changes were made.';
 $string['dryrun_status'] = '(dry run) {$a}';
 $string['error_bad_operation'] = 'Unknown operation';
+$string['error_empty_file'] = 'The CSV file contains no data rows.';
 $string['error_headers'] = 'Missing headers: expect username,cohortid or username,cohortidnumber';
 $string['error_missing_cohort_column'] = 'Missing headers: expect a "cohortid" or "cohortidnumber" column.';
 $string['error_mixed_operations'] = 'A file must be either pure "sync" or pure "add"/"del", not a mix of both.';
@@ -47,14 +49,12 @@ $string['examplesynccsv_help'] = 'Download this file, open it with a text or spr
     . 'username/cohortidnumber values to match your own sync rows before uploading it. Remember: sync rows for '
     . 'the same user list their full target cohort set.';
 $string['legacy_format_notice'] = 'No "operation" column found: all rows were processed as "del" for backward compatibility.';
-$string['menulink'] = 'Cohort Membership';
 $string['pageheading'] = 'Cohort Membership';
 $string['pluginname'] = 'Cohort Membership';
 $string['pluginname_help'] = 'Manages cohort memberships (add, remove, sync) via CSV upload. See the '
     . '[plugin repository on GitHub](https://github.com/tkorner/moodle-local_cohortmembership) for the full '
     . 'documentation, CSV format examples and specification.';
 $string['privacy:metadata'] = 'This plugin does not store any personal data.';
-$string['results'] = 'Results';
 $string['rows_errors'] = 'Rows with errors';
 $string['rows_processed'] = 'Rows processed';
 $string['rows_skipped'] = 'Rows skipped';
@@ -64,6 +64,7 @@ $string['rows_warnings'] = 'Removals with a cohort-sync warning';
 $string['standardise_usernames'] = 'Standardise usernames (trim + lowercase)';
 $string['status_added'] = 'Added';
 $string['status_alreadymember'] = 'Already a member';
+$string['status_cohortambiguous'] = 'Cohort idnumber is ambiguous (used by more than one cohort)';
 $string['status_cohortnotfound'] = 'Cohort not found';
 $string['status_duplicate'] = 'Duplicate in file';
 $string['status_invalid'] = 'Invalid data';
