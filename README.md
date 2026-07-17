@@ -153,9 +153,23 @@ display it and offer the CSV download. It implements
 
 ## Install
 
-1. Place the folder at `moodle/local/cohortmembership`.
-2. Site administration → Notifications, to trigger the install/upgrade.
-3. Open: Site administration → Plugins → Local plugins → Cohort Membership.
+Requirements: Moodle 4.5 LTS or 5.0-5.2, PHP 8.1-8.4 (see
+[Compatibility](#compatibility)).
+
+1. Get the code:
+   - download a release from
+     [GitHub Releases](https://github.com/tkorner/moodle-local_cohortmembership/releases), or
+   - `git clone https://github.com/tkorner/moodle-local_cohortmembership.git`
+2. Place it at `<moodle>/local/cohortmembership` - the folder name must be
+   exactly `cohortmembership`; Moodle derives the component name
+   (`local_cohortmembership`) from it.
+3. Site administration → Notifications, to trigger the install.
+4. By default, only the **Manager** archetype gets the
+   `local/cohortmembership:manage` capability (core's `moodle/cohort:assign`
+   is required in addition). To grant access to another role, assign both
+   capabilities to it under Site administration → Users → Permissions →
+   Define roles.
+5. Open: Site administration → Plugins → Local plugins → Cohort Membership.
 
 ## Compatibility
 
