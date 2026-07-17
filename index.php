@@ -31,7 +31,14 @@ require_once($CFG->dirroot . '/cohort/lib.php');
 // require_login()/set_url() never gets.
 admin_externalpage_setup('local_cohortmembership');
 $context = context_system::instance();
+
+// Dual capability checks (both required):
+// - moodle/cohort:assign: Core Moodle capability for cohort operations
+// - local/cohortmembership:manage: Plugin-specific capability to restrict access to this tool
+// This pattern allows admins to use Moodle roles to control both core cohort access AND
+// use of this specific membership management plugin, enabling granular delegation.
 require_capability('moodle/cohort:assign', $context);
+require_capability('local/cohortmembership:manage', $context);
 
 // Handle secure CSV download of the last run's results (stored in a per-session
 // temp file, see report_store), before any HTML output: csv_export_writer::
@@ -53,7 +60,7 @@ if ($download) {
                 \core\dataformat::escape_spreadsheet_formula($r['cohortidnumber'] ?? ''),
                 $r['operation'] ?? '',
                 $r['status_readable'] ?? ($r['status'] ?? ''),
-                !empty($r['cohortsync_warning']) ? get_string('yes') : get_string('no'),
+                !empty($r['cohortsync_warning']) ? get_string('yes', 'core') : get_string('no', 'core'),
             ]);
         }
         // The download consumes the stored report; a second click just falls through to the form.
