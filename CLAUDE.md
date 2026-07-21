@@ -42,6 +42,24 @@ Solange der Ordner noch `cohortunenroller` heisst: das ist erwartet, kein Fehler
 - Session-Key für Report-Download umbenennen
 - README neu
 
+## Moodle Marketplace: Submission-Status
+
+Plugin wird bei Moodle Marketplace (<https://marketplace.moodle.com>, Nachfolger der
+alten Plugins-Directory seit 20.07.2026) eingereicht. `version.php` steht dafür auf
+`MATURITY_STABLE` / Release `1.0.0`.
+
+**Bewusste Abweichung von den Marketplace-Guidelines:** `lang/de/local_cohortmembership.php`
+bleibt im Plugin, obwohl die Guidelines verlangen: "Only English strings should be
+included in the plugin. Translations into other languages must be submitted via
+Moodle's AMOS translation toolkit after your plugin is approved." Entscheidung
+(2026-07-21): DE-Übersetzung nicht verlieren und schon vor der Freigabe anbieten,
+Risiko eines Review-Kommentars bewusst in Kauf genommen.
+
+**Nicht selbstständig "reparieren"**, d.h. `lang/de/...` nicht wieder entfernen, ohne
+vorher Rücksprache zu halten — das war kein Versehen. Sobald das Plugin freigegeben
+ist, wird die Übersetzung manuell zu AMOS migriert (danach ggf. `lang/de/` aus dem
+Plugin selbst entfernen).
+
 ## Umgebung
 
 - **Moodle:** 5.2.x (Docker), Ziel-Kompatibilität 4.5 LTS + 5.x
