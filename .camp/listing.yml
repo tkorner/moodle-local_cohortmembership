@@ -1,0 +1,41 @@
+# camp listing manifest — descriptive content for your plugin's page.
+# Edit freely and commit; camp ingests this file at each tagged release.
+# Schema: https://camp-registry.org/schema/listing.schema.json
+name: Cohort Membership
+summary: Add, remove, and sync Moodle cohort memberships via CSV, with dry-run and an HTML/CSV report — fills the gap left by MDL-61007.
+description: |
+  Manages cohort **memberships** via CSV: add users to cohorts, remove them,
+  or sync a user's cohort memberships to a desired state. UI-based (CSV
+  upload) with dry-run, HTML report and CSV download; two CLI entry points
+  are also provided.
+
+  ## Why this plugin exists
+
+  Moodle core has no built-in way to remove users from cohorts via CSV or
+  the UI — this is an open tracker request,
+  [MDL-61007](https://tracker.moodle.org/browse/MDL-61007), open since 2017.
+  Core's `tool_uploaduser` already covers *add* via `cohort1,cohort2,...`
+  columns, and the `core_cohort_delete_cohort_members` web service covers
+  *remove* programmatically, but neither has a UI, a dry-run, or a report.
+
+  This plugin fills that gap and extends it to cover **add**, **del** and
+  **sync** — one CSV format, one report, one dry-run, for all three
+  operations.
+
+  ## Guardrails
+
+  - Never auto-creates cohorts — an unknown cohort is an error row in the
+    report, never a new cohort.
+  - Dry-run is the default.
+  - All membership changes go exclusively through Moodle's
+    `cohort_add_member()` / `cohort_remove_member()`.
+  - A single bad CSV row never aborts the whole run.
+  - Every removal is flagged if the cohort is used by an active
+    **Cohort sync** enrolment method, since removal there also unenrols the
+    user from the course.
+labels:
+  - fully-free
+category: Users and cohorts
+links:
+  docs: https://github.com/tkorner/moodle-local_cohortmembership#readme
+  issues: https://github.com/tkorner/moodle-local_cohortmembership/issues
