@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/logo.svg" width="96" height="96" alt="Cohort Membership logo">
+</p>
+
 [![Moodle plugin CI](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml/badge.svg)](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml)
 
 # Cohort Membership (Moodle local plugin)

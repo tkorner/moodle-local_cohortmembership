@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect x="0" y="0" width="200" height="200" rx="44" fill="#eaf1fb"/>
+
+  <!-- spokes (drawn first, ends hidden under nodes) -->
+  <g stroke="#1a4d8c" stroke-width="4" stroke-linecap="round">
+    <line x1="100" y1="100" x2="136.8" y2="63.2"/>
+    <line x1="100" y1="100" x2="136.8" y2="136.8"/>
+    <line x1="100" y1="100" x2="63.2" y2="136.8"/>
+    <line x1="100" y1="100" x2="63.2" y2="63.2"/>
+  </g>
+
+  <!-- 4 member satellites, each: white circle badge + person glyph -->
+  <g fill="#1a4d8c">
+    <circle cx="136.8" cy="63.2" r="28" fill="#ffffff" stroke="#1a4d8c" stroke-width="4"/>
+    <g transform="translate(136.8,63.2) scale(0.9)">
+      <path d="M -9 14 Q -9 -2 0 -2 Q 9 -2 9 14 Z"/>
+      <circle cy="-7" r="6.5"/>
+    </g>
+
+    <circle cx="136.8" cy="136.8" r="28" fill="#ffffff" stroke="#1a4d8c" stroke-width="4"/>
+    <g transform="translate(136.8,136.8) scale(0.9)">
+      <path d="M -9 14 Q -9 -2 0 -2 Q 9 -2 9 14 Z"/>
+      <circle cy="-7" r="6.5"/>
+    </g>
+
+    <circle cx="63.2" cy="136.8" r="28" fill="#ffffff" stroke="#1a4d8c" stroke-width="4"/>
+    <g transform="translate(63.2,136.8) scale(0.9)">
+      <path d="M -9 14 Q -9 -2 0 -2 Q 9 -2 9 14 Z"/>
+      <circle cy="-7" r="6.5"/>
+    </g>
+
+    <circle cx="63.2" cy="63.2" r="28" fill="#ffffff" stroke="#1a4d8c" stroke-width="4"/>
+    <g transform="translate(63.2,63.2) scale(0.9)">
+      <path d="M -9 14 Q -9 -2 0 -2 Q 9 -2 9 14 Z"/>
+      <circle cy="-7" r="6.5"/>
+    </g>
+  </g>
+
+  <!-- hub -->
+  <rect x="-11" y="-11" width="22" height="22" fill="#1a4d8c" transform="translate(100,100) rotate(45)"/>
+</svg>
