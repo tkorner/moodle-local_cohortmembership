@@ -1,129 +1,237 @@
-# Moodle Cohort Membership (`local_cohortmembership`)
+<p align="center">
+  <img src=".github/logo.svg" width="96" height="96" alt="Cohort Membership logo">
+</p>
 
-[![Moodle Plugin CI](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml/badge.svg)](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml)
-[![Moodle Version](https://img.shields.io/badge/Moodle-4.1%2B%20%7C%204.5%2B%20%7C%205.0%2B-orange.svg)](https://moodle.org)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Moodle Plugin Type](https://img.shields.io/badge/Plugin%20Type-local-green.svg)](https://docs.moodle.org/dev/Local_plugins)
+[![Moodle plugin CI](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml/badge.svg)](https://github.com/tkorner/moodle-local_cohortmembership/actions/workflows/moodle-ci.yml)
 
-**`local_cohortmembership`** is a Moodle local plugin that provides comprehensive batch management of cohort memberships via CSV uploads and CLI scripts. It allows administrators to **add**, **remove**, or **sync** user cohort assignments safely with interactive dry-runs, detailed HTML reports, and downloadable results.
+# Cohort Membership (Moodle local plugin)
 
----
+Manages cohort **memberships** via CSV: add users to cohorts, remove them, or
+sync a user's cohort memberships to a desired state. UI-based (CSV upload)
+with dry-run, HTML report and CSV download; two CLI entry points are also
+provided.
 
-## 🌟 Why This Plugin Exists
+## Why this plugin exists
 
-Moodle core lacks a native UI or CSV mechanism to remove users from cohorts—an open issue tracked under [MDL-61007](https://tracker.moodle.org/browse/MDL-61007) since 2017. While core's `tool_uploaduser` supports cohort addition (`cohort1, cohort2`), and Web Services support removal, neither provides a dedicated UI, dry-run simulation, or execution reporting.
+Moodle core has no built-in way to remove users from cohorts via CSV or the
+UI — this is an open tracker request,
+[MDL-61007](https://tracker.moodle.org/browse/MDL-61007), open since 2017.
+Core's `tool_uploaduser` already covers *add* via `cohort1,cohort2,...`
+columns, and the `core_cohort_delete_cohort_members` web service covers
+*remove* programmatically, but neither has a UI, a dry-run, or a report.
 
-`local_cohortmembership` fills this gap by unifying **add**, **remove**, and **exact-state sync** into a single CSV-driven workflow.
+This plugin fills that gap and, since a single CSV-driven workflow already
+existed for removal, extends it to cover **add** and **sync** as well - one
+CSV format, one report, one dry-run, for all three operations. It began as
+`local_cohortunenroller` (remove-only) and was renamed and extended into
+`local_cohortmembership`.
 
----
+## Design principles / guardrails
 
-## ✨ Key Features
+- **Never auto-creates cohorts.** An unknown cohort `idnumber`/`id` is an
+  error row in the report, never a new cohort. This is a deliberate
+  deviation from Moodle core, which silently creates a new cohort for an
+  unrecognised `cohortN` value in `tool_uploaduser` (MDL-41639) - a frequent
+  source of duplicate-cohort chaos.
+- **Dry-run is the default** (the checkbox is pre-selected in the UI).
+- All membership changes go exclusively through Moodle's
+  `cohort_add_member()` / `cohort_remove_member()` - never a direct database
+  write.
+- A single bad CSV row never aborts the whole run; only file-level problems
+  (bad headers, mixing `sync` with `add`/`del`) reject the file before any
+  row is processed.
+- Every CSV row produces exactly one report line (`sync`-driven removals
+  that are not named by any row get an additional, clearly synthetic line).
+- User matching is by `username` only (not `idnumber`/email) - out of scope
+  for v1.
 
-- 📄 **Unified CSV Workflow**: Perform `add`, `del` (remove), or `sync` operations in a single standardized format.
-- 🛡️ **Safety-First Dry-Run**: Simulation mode is enabled by default to preview all additions and removals before modifying the database.
-- 📊 **Detailed Reporting**: Interactive HTML summary reports and downloadable CSV logs for every execution.
-- 💻 **CLI Integration**: Full Command-Line Interface support for scheduled automation and bulk backend operations.
-- ⚠️ **Enrolment Risk Alerts**: Flags removals for cohorts tied to active **Cohort Sync** (`enrol_cohort`) enrolment methods to prevent accidental student unenrolments.
-- 🔒 **Core API Compliance**: Modifies memberships exclusively through Moodle's native `cohort_add_member()` and `cohort_remove_member()` functions.
+### ⚠️ Cohort-sync warning
 
----
+Removing a user from a cohort is **not** limited to the `cohort_members`
+table. If a course has an active **Cohort sync** enrolment method
+(`enrol_cohort`) pointing at that cohort, removing the membership also
+**unenrols the user from that course** - taking their grades, group
+memberships, and other course-specific data with it.
 
-## 📐 Safety Guardrails & Design Principles
+Every removal row in the report (`del` or `sync`) is flagged if the cohort
+is used by at least one active `enrol_cohort` instance. **Take a database
+backup before running a removal in live mode** if you are not certain which
+cohorts feed course enrolments.
 
-- **No Automatic Cohort Creation**: Unknown cohort `idnumber` or `id` entries generate an explicit error row instead of creating duplicate cohorts (fixing core `tool_uploaduser` behavior MDL-41639).
-- **Default Dry-Run**: The simulation checkbox is checked by default in both UI and CLI.
-- **Fault-Tolerant Row Processing**: Bad CSV rows are logged individually without aborting the entire upload.
-- **1-to-1 Audit Log**: Every input CSV row produces exactly one output report line.
+## CSV format
 
----
+One row per operation. Header row is required (lower case).
 
-## ⚠️ Important Warning: Cohort Sync Enrolments
-
-Removing a user from a cohort is **not** limited to the `cohort_members` table. If a course uses an active **Cohort sync** enrolment method (`enrol_cohort`), removing a user from that cohort will **automatically unenrol the user from the course**—purging gradebook records, group memberships, and activity data.
-
-> [!WARNING]
-> Always run a **Dry-run** first and verify if the target cohorts are linked to active course enrolments (`enrol_cohort`).
-
----
-
-## 📄 CSV Format Specifications
-
-The CSV file requires a lowercase header row.
-
-### Standard Format (`cohortidnumber`)
-```csv
+```
 operation,username,cohortidnumber
 add,hans.muster,kurs-inf-2026
 del,hans.muster,kurs-inf-2023
 ```
 
-### Alternative Format (`cohortid`)
-```csv
-operation,username,cohortid
-add,hans.muster,102
-del,hans.muster,88
+Downloadable example: [`example-add-del.csv`](example-add-del.csv) - also linked directly
+from the upload form itself, the same way core's "Upload users" offers its `example.csv`.
+
+- Exactly one of `cohortidnumber` (text) or `cohortid` (numeric) must be
+  present as a column. If both are present, `cohortid` wins and the report
+  notes that `cohortidnumber` was ignored.
+- `operation` is one of `add`, `del`, `sync`. **If the column is omitted
+  entirely**, every row is treated as `del` (backward compatible with the
+  original `local_cohortunenroller` CSV format).
+- A file must be either pure `sync`, or pure `add`/`del` - mixing `sync`
+  rows with `add`/`del` rows in the same file is rejected before any row is
+  processed.
+
+### `sync`: bring a user's memberships to an exact state
+
+`sync` works **per user, across all of that user's rows in the file**, not
+row by row:
+
+```
+operation,username,cohortidnumber
+sync,hans.muster,kurs-inf-2026
+sync,hans.muster,basis-alle
+sync,anna.beispiel,kurs-bwl-2026
 ```
 
-- **Supported Operations**: `add`, `del`, `sync`.
-- **Default Fallback**: If the `operation` column is omitted, all rows default to `del` (backward compatible with `local_cohortunenroller`).
-- **`sync` Mode**: Reconciles a user's cohort memberships to match **exactly** the cohorts listed in the file for that user.
+Downloadable example (includes a third user, `peter.roth`, to show two
+users' targets computed independently): [`example-sync.csv`](example-sync.csv) -
+also linked directly from the upload form.
 
----
+- The **file universe** is the union of every cohort named anywhere in the
+  file: `{kurs-inf-2026, basis-alle, kurs-bwl-2026}`.
+- For `hans.muster`, the target state is `{kurs-inf-2026, basis-alle}`. If
+  he is also a member of `kurs-bwl-2026` (in the universe, but not in his
+  rows), that membership is **removed**. If he is a member of some
+  `sonstiges-2020` cohort that never appears in the file, it is **never
+  touched** - there is no "full replace" against a user's entire cohort
+  list, only against the cohorts the file actually mentions.
+- `anna.beispiel`'s target is `{kurs-bwl-2026}`, computed independently of
+  `hans.muster`'s rows.
 
-## 💻 CLI Usage
+This scope rule is what makes `sync` safe to run repeatedly without a
+managed/ownership flag on cohorts.
 
-The plugin provides two CLI scripts for backend automation:
+## Using the UI
 
-### 1. Batch Process CSV File
-```bash
-php local/cohortmembership/cli/process_csv.php --file=/path/to/memberships.csv --dry-run=1
-```
+Site administration → Plugins → Local plugins → **Cohort Membership**.
+Upload a CSV, review the dry-run report, then re-run with dry-run unchecked
+to apply. The report and the CSV download both show `operation`, `status`
+and whether cohort-sync was affected per row; a summary line counts
+removals with a cohort-sync warning.
 
-### 2. Live Execution
-```bash
-php local/cohortmembership/cli/process_csv.php --file=/path/to/memberships.csv --dry-run=0
-```
+## CLI
 
----
+Two scripts are provided:
 
-## 🚀 Installation & Setup
+- **`cli/membership.php`** - the current entry point, supporting the full
+  `add`/`del`/`sync` format described above (with or without the
+  `operation` column).
 
-1. Clone or extract this plugin into your Moodle installation at `local/cohortmembership`:
-   ```bash
-   git clone https://github.com/tkorner/moodle-local_cohortmembership.git local/cohortmembership
-   ```
-2. Run the Moodle CLI upgrade command:
-   ```bash
-   php admin/cli/upgrade.php
-   ```
-3. Purge Moodle caches:
-   ```bash
-   php admin/cli/purge_caches.php
-   ```
-4. Access the upload tool under **Site Administration → Users → Accounts → Cohort Membership CSV Upload** (or via URL `/local/cohortmembership/upload.php`).
-
----
-
-## 🧪 Testing & Quality Assurance
-
-- **PHPUnit Tests**:
   ```bash
-  vendor/bin/phpunit local_cohortmembership/tests/processor_test.php
+  php local/cohortmembership/cli/membership.php --csv=/path/in.csv \
+    [--report=/path/out.csv] [--dry-run] [--username-standardise] \
+    [--delimiter=comma|semicolon|tab]
   ```
-- **Behat Acceptance Tests**:
+
+- **`cli/unenrol.php`** - the original, `del`-only script from
+  `local_cohortunenroller`, kept unchanged for backward compatibility with
+  existing cron jobs/scripts. New integrations should use
+  `cli/membership.php` instead.
+
   ```bash
-  vendor/bin/behat --config /path/to/behat.yml local_cohortmembership/tests/behat/upload.feature
+  php local/cohortmembership/cli/unenrol.php --csv=/path/in.csv \
+    [--report=/path/out.csv] [--dry-run] [--username-standardise]
   ```
 
----
+Both exit `0` on a clean run, a non-zero code on error rows or a
+file-level validation failure, and require the account running PHP CLI to
+already have server-level access (there is no login/capability check - the
+same trust model Moodle's own `admin/cli/*.php` scripts use).
 
-## 🔒 Privacy & GDPR Compliance
+## Privacy
 
-Implements the Moodle Privacy API (`\core_privacy\local\metadata\null_provider`). It does not store or process personal data independently outside of core cohort logs.
+This plugin does not store any personal data of its own: the report only
+ever lives in the current user's session, for the duration needed to
+display it and offer the CSV download. It implements
+`\core_privacy\local\metadata\null_provider` accordingly.
 
----
+## Install
 
-## 📜 License
+Requirements: Moodle 4.5 LTS or 5.0-5.3, PHP 8.1-8.4 (see
+[Compatibility](#compatibility)).
 
-Licensed under the [GNU General Public License v3.0 or later](http://www.gnu.org/licenses/gpl.html).  
-Copyright (C) 2026 Antigravity & Contributors.
+1. Get the code:
+   - download a release from
+     [GitHub Releases](https://github.com/tkorner/moodle-local_cohortmembership/releases), or
+   - `git clone https://github.com/tkorner/moodle-local_cohortmembership.git`
+2. Place it at `<moodle>/local/cohortmembership` - the folder name must be
+   exactly `cohortmembership`; Moodle derives the component name
+   (`local_cohortmembership`) from it.
+3. Site administration → Notifications, to trigger the install.
+4. By default, only the **Manager** archetype gets the
+   `local/cohortmembership:manage` capability (core's `moodle/cohort:assign`
+   is required in addition). To grant access to another role, assign both
+   capabilities to it under Site administration → Users → Permissions →
+   Define roles.
+5. Open: Site administration → Plugins → Local plugins → Cohort Membership.
+
+## Compatibility
+
+Targets Moodle 4.5 LTS and 5.0-5.3, PHP 8.1-8.4. Verified by actually
+installing the plugin against a real checkout of each Moodle 5.x point
+release (not just reading changelogs) and running the full PHPUnit suite
+plus a live CLI smoke test against each:
+
+| Moodle version | Result |
+|---|---|
+| 5.0.8+ | ✅ PHPUnit 34/34, CLI smoke test (real DB changes verified) |
+| 5.1.5+ | ✅ PHPUnit 34/34 |
+| 5.2.1+ | ✅ PHPUnit 34/34 (also the primary dev/live-verification target throughout development) |
+| 5.3 (dev/alpha, pre-release as of 2026-09-16, build 20260911) | ✅ PHPUnit 48/48, CLI smoke test (real DB changes verified) — no plugin code changes needed; `cohort_add_member()`/`cohort_remove_member()` are not deprecated in 5.3 |
+
+Moodle 5.1 introduced a `public/` web-root split (the actual codebase
+moves one level down, e.g. `public/local/...`); this plugin has no
+dependency on the installation's directory layout (no hardcoded
+`dirroot`-relative paths outside the standard `$CFG->dirroot`-based
+includes), so it is unaffected either way.
+
+## Tests & CI
+
+This plugin uses [Moodle Plugin CI](https://moodlehq.github.io/moodle-plugin-ci/)
+on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1 and 5.2,
+on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs), PHPDoc
+checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
+Behat. The matrix also runs against Moodle core's `main` branch (currently
+5.3dev) to catch regressions early; there's no `MOODLE_503_STABLE` branch to
+pin to yet, since that's only cut when Moodle 5.3 itself is released
+(targeted 2026-10-05), so this entry tracks a moving target and may go red
+on unrelated core changes.
+
+Run the PHPUnit suite locally (inside a Moodle dev instance that has this
+plugin installed under `local/cohortmembership`):
+
+```bash
+php admin/tool/phpunit/cli/init.php   # once, to set up the test environment
+vendor/bin/phpunit --filter local_cohortmembership
+```
+
+Check coding style locally with [moodle-cs](https://github.com/moodlehq/moodle-cs):
+
+```bash
+phpcs --standard=moodle local/cohortmembership
+```
+
+## Full specification
+
+See [`SPEC-cohortmembership.md`](SPEC-cohortmembership.md) for the complete
+behavioural specification, including every validation rule and the full
+PHPUnit test case list.
+
+## Development
+
+Developed with the assistance of [Claude Code](https://claude.com/claude-code).
+See [`CLAUDE.md`](CLAUDE.md) for the project context file used to guide it.
+
+## License
+
+GPL v3 or later - see [`LICENSE`](LICENSE).
