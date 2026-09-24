@@ -16,7 +16,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
 
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:${{ matrix.mariadb || '10' }}
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -30,11 +30,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Moodle 5.3dev; no MOODLE_503_STABLE branch until the 5.3 release (targeted 2026-10-05).
+          # Needs MariaDB >= 11.4, unlike every other branch below - kept matrix-scoped via
+          # matrix.mariadb so it doesn't raise the floor for the older stable branches.
           - php: '8.4'
-            moodle-branch: 'main' # Moodle 5.3dev; no MOODLE_503_STABLE branch until the 5.3 release (targeted 2026-10-05).
+            moodle-branch: 'main'
             database: 'mariadb'
+            mariadb: '11.4'
           - php: '8.4'
-            moodle-branch: 'main' # Moodle 5.3dev; no MOODLE_503_STABLE branch until the 5.3 release (targeted 2026-10-05).
+            moodle-branch: 'main'
             database: 'pgsql'
           - php: '8.4'
             moodle-branch: 'MOODLE_502_STABLE'
