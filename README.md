@@ -202,10 +202,11 @@ on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1 and 5.2,
 on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs), PHPDoc
 checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
 Behat. The matrix also runs against Moodle core's `main` branch (currently
-5.3dev) to catch regressions early; there's no `MOODLE_503_STABLE` branch to
-pin to yet, since that's only cut when Moodle 5.3 itself is released
-(targeted 2026-10-05), so this entry tracks a moving target and may go red
-on unrelated core changes.
+5.3dev) as an early-warning, best-effort check; there's no `MOODLE_503_STABLE`
+branch to pin to yet, since that's only cut when Moodle 5.3 itself is
+released (targeted 2026-10-05). This entry tracks a moving target and is
+marked `continue-on-error` for that reason - it won't fail the overall CI
+run on unrelated core changes, but its own status is still visible per-job.
 
 Run the PHPUnit suite locally (inside a Moodle dev instance that has this
 plugin installed under `local/cohortmembership`):
