@@ -8,7 +8,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres || '16' }}
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
@@ -25,15 +25,18 @@ jobs:
           MYSQL_COLLATION_SERVER: "utf8mb4_unicode_ci"
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+        # mariadb-admin (not mysqladmin - MariaDB 11 dropped the mysql*-compat symlinks the
+        # official image relied on) works across both the 10.x and 11.4 images in this matrix.
+        options: --health-cmd="mariadb-admin ping" --health-interval 10s --health-timeout 5s --health-retries 3
 
     strategy:
       fail-fast: false
       matrix:
         include:
           # Moodle 5.3dev; no MOODLE_503_STABLE branch until the 5.3 release (targeted 2026-10-05).
-          # Needs MariaDB >= 11.4, unlike every other branch below - kept matrix-scoped via
-          # matrix.mariadb so it doesn't raise the floor for the older stable branches.
+          # Needs MariaDB >= 11.4 / PostgreSQL >= 17, unlike every other branch below - kept
+          # matrix-scoped via matrix.mariadb/matrix.postgres so it doesn't raise the floor for
+          # the older stable branches.
           # experimental: true keeps failures here from reddening the whole run - main tracks
           # a moving target and can break on unrelated core changes.
           - php: '8.4'
@@ -44,6 +47,7 @@ jobs:
           - php: '8.4'
             moodle-branch: 'main'
             database: 'pgsql'
+            postgres: '17'
             experimental: true
           - php: '8.4'
             moodle-branch: 'MOODLE_502_STABLE'
