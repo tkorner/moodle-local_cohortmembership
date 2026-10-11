@@ -157,7 +157,7 @@ display it and offer the CSV download. It implements
 
 ## Install
 
-Requirements: Moodle 4.5 LTS or 5.0-5.3, PHP 8.1-8.4 (see
+Requirements: Moodle 4.5 LTS, 5.0-5.2 or 5.3 LTS, PHP 8.1-8.4 (see
 [Compatibility](#compatibility)).
 
 1. Get the code:
@@ -177,7 +177,7 @@ Requirements: Moodle 4.5 LTS or 5.0-5.3, PHP 8.1-8.4 (see
 
 ## Compatibility
 
-Targets Moodle 4.5 LTS and 5.0-5.3, PHP 8.1-8.4. Verified by actually
+Targets Moodle 4.5 LTS, 5.0-5.2 and 5.3 LTS, PHP 8.1-8.4. Verified by actually
 installing the plugin against a real checkout of each Moodle 5.x point
 release (not just reading changelogs) and running the full PHPUnit suite
 plus a live CLI smoke test against each:
@@ -187,7 +187,10 @@ plus a live CLI smoke test against each:
 | 5.0.8+ | ✅ PHPUnit 34/34, CLI smoke test (real DB changes verified) |
 | 5.1.5+ | ✅ PHPUnit 34/34 |
 | 5.2.1+ | ✅ PHPUnit 34/34 (also the primary dev/live-verification target throughout development) |
-| 5.3 (dev/alpha, pre-release as of 2026-09-16, build 20260911) | ✅ PHPUnit 48/48, CLI smoke test (real DB changes verified) — no plugin code changes needed; `cohort_add_member()`/`cohort_remove_member()` are not deprecated in 5.3 |
+| 5.3 LTS (Build 20261005) | ✅ PHPUnit 48/48, CLI smoke test (real DB changes verified) — no plugin code changes needed; `cohort_add_member()`/`cohort_remove_member()` are not deprecated in 5.3 |
+
+Moodle 5.3 itself requires MariaDB >= 11.4 / PostgreSQL >= 17 and
+PHP >= 8.3; the plugin adds no requirements of its own beyond that.
 
 Moodle 5.1 introduced a `public/` web-root split (the actual codebase
 moves one level down, e.g. `public/local/...`); this plugin has no
@@ -198,15 +201,10 @@ includes), so it is unaffected either way.
 ## Tests & CI
 
 This plugin uses [Moodle Plugin CI](https://moodlehq.github.io/moodle-plugin-ci/)
-on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1 and 5.2,
-on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs), PHPDoc
-checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
-Behat. The matrix also runs against Moodle core's `main` branch (currently
-5.3dev) as an early-warning, best-effort check; there's no `MOODLE_503_STABLE`
-branch to pin to yet, since that's only cut when Moodle 5.3 itself is
-released (targeted 2026-10-05). This entry tracks a moving target and is
-marked `continue-on-error` for that reason - it won't fail the overall CI
-run on unrelated core changes, but its own status is still visible per-job.
+on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1, 5.2 and
+5.3 LTS, on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs),
+PHPDoc checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
+Behat.
 
 Run the PHPUnit suite locally (inside a Moodle dev instance that has this
 plugin installed under `local/cohortmembership`):

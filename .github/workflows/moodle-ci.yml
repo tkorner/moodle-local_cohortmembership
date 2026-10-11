@@ -4,7 +4,6 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-22.04
-    continue-on-error: ${{ matrix.experimental == true }}
 
     services:
       postgres:
@@ -33,22 +32,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Moodle 5.3dev; no MOODLE_503_STABLE branch until the 5.3 release (targeted 2026-10-05).
-          # Needs MariaDB >= 11.4 / PostgreSQL >= 17, unlike every other branch below - kept
-          # matrix-scoped via matrix.mariadb/matrix.postgres so it doesn't raise the floor for
-          # the older stable branches.
-          # experimental: true keeps failures here from reddening the whole run - main tracks
-          # a moving target and can break on unrelated core changes.
+          # Moodle 5.3 needs MariaDB >= 11.4 / PostgreSQL >= 17, unlike every other branch
+          # below - kept matrix-scoped via matrix.mariadb/matrix.postgres so it doesn't raise
+          # the floor for the older stable branches.
           - php: '8.4'
-            moodle-branch: 'main'
+            moodle-branch: 'MOODLE_503_STABLE'
             database: 'mariadb'
             mariadb: '11.4'
-            experimental: true
           - php: '8.4'
-            moodle-branch: 'main'
+            moodle-branch: 'MOODLE_503_STABLE'
             database: 'pgsql'
             postgres: '17'
-            experimental: true
+          - php: '8.3'
+            moodle-branch: 'MOODLE_503_STABLE'
+            database: 'mariadb'
+            mariadb: '11.4'
+          - php: '8.3'
+            moodle-branch: 'MOODLE_503_STABLE'
+            database: 'pgsql'
+            postgres: '17'
           - php: '8.4'
             moodle-branch: 'MOODLE_502_STABLE'
             database: 'mariadb'
