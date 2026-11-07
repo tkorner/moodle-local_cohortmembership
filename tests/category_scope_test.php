@@ -32,13 +32,13 @@ use local_cohortmembership\local\processor;
  * Class category_scope_test
  */
 final class category_scope_test extends \advanced_testcase {
-    /** @var \stdClass Category the manager is assigned to. */
+    /** @var \core_course_category Category the manager is assigned to. */
     private $cat;
 
-    /** @var \stdClass Subcategory of $cat. */
+    /** @var \core_course_category Subcategory of $cat. */
     private $subcat;
 
-    /** @var \stdClass Sibling category of $cat, outside the manager's scope. */
+    /** @var \core_course_category Sibling category of $cat, outside the manager's scope. */
     private $othercat;
 
     /** @var \stdClass User holding the manager role in $cat only. */
@@ -70,10 +70,10 @@ final class category_scope_test extends \advanced_testcase {
      * Create a cohort in the given category (or at system level for null).
      *
      * @param string $idnumber
-     * @param \stdClass|null $category
+     * @param \core_course_category|null $category
      * @return \stdClass
      */
-    private function cohort(string $idnumber, ?\stdClass $category): \stdClass {
+    private function cohort(string $idnumber, ?\core_course_category $category): \stdClass {
         $context = $category ? \context_coursecat::instance($category->id) : \context_system::instance();
         return $this->getDataGenerator()->create_cohort(['idnumber' => $idnumber, 'contextid' => $context->id]);
     }
