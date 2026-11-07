@@ -8,3 +8,11 @@
 CLAUDE.md export-ignore
 SPEC-cohortmembership.md export-ignore
 claude-code-prompt.md export-ignore
+
+# Repository tooling (CI and release workflows, registry metadata, git config):
+# not part of the plugin. CAMP reads .camp/listing.yml from the git blob at the
+# release commit, not from the archive, so ignoring it here is safe.
+.github export-ignore
+.camp export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
