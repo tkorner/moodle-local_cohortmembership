@@ -1,0 +1,26 @@
+name: Release Plugin version to Moodle Marketplace
+
+on:
+  # Triggered by the published GitHub Release rather than the tag push: the shared
+  # workflow takes its release notes from that Release and, if it does not exist yet,
+  # falls back to the whole CHANGES.md. Releases are only created once CI is green.
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to be released (e.g. v1.4.0)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  release-to-marketplace:
+    # Pinned to a commit because this job receives the Marketplace token and the
+    # upstream repository has no release tags, only a moving main branch.
+    uses: moodlehq/moodle-plugin-release/.github/workflows/moodle-release.yml@7c56bd9ce7b0a3125459924e7bd08570d41b9aa3 # main, revision 2026101401
+    with:
+      tag: ${{ inputs.tag }}
+    secrets:
+      MOODLE_MARKETPLACE_TOKEN: ${{ secrets.MOODLE_MARKETPLACE_TOKEN }}
