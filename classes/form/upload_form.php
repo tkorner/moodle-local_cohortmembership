@@ -93,7 +93,7 @@ class upload_form extends \moodleform {
         $mform->addElement('advcheckbox', 'dryrun', get_string('dryrun', 'local_cohortmembership'), '');
         $mform->setDefault('dryrun', 1);
 
-        // Submit.
-        $mform->addElement('submit', 'submitbutton', get_string('submit', 'local_cohortmembership'));
+        // Submit and cancel (cancel returns to where the page was opened from, see index.php).
+        $this->add_action_buttons(true, get_string('submit', 'local_cohortmembership'));
     }
 }
