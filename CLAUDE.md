@@ -39,6 +39,7 @@ Solange der Ordner noch `cohortunenroller` heisst: das ist erwartet, kein Fehler
 - Capability `local/cohortunenroller:run` → `local/cohortmembership:manage`
   (zusätzlich weiterhin Core `moodle/cohort:assign` verlangen)
 - `version.php`: neuer `component`, frische Versionsnummer, `$plugin->requires` = Moodle 4.5
+  (Stand der Umbenennung; ab 1.2.0 bewusst Moodle 5.0, 4.5-Sites bleiben auf 1.1.0)
 - Session-Key für Report-Download umbenennen
 - README neu
 
@@ -62,7 +63,7 @@ Plugin selbst entfernen).
 
 ## Umgebung
 
-- **Moodle:** 5.2.x (Docker), Ziel-Kompatibilität 4.5 LTS + 5.x
+- **Moodle:** 5.2.x (Docker), Ziel-Kompatibilität 5.0 – 5.3 LTS (ab 1.2.0; 4.5 LTS bis 1.1.0)
 - **OS:** macOS
 - **Docker-Container:** `claude-moodle-1` (Moodle), `claude-mariadb-1` (DB)
 - **Mount:** Host `/Users/tkorner/Documents/claude/plugins/local` →

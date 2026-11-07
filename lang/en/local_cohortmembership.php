@@ -41,6 +41,7 @@ $string['error_headers'] = 'Missing headers: expect username,cohortid or usernam
 $string['error_missing_cohort_column'] = 'Missing headers: expect a "cohortid" or "cohortidnumber" column.';
 $string['error_mixed_operations'] = 'A file must be either pure "sync" or pure "add"/"del", not a mix of both.';
 $string['error_nofile'] = 'Please upload a CSV file.';
+$string['error_noreport'] = 'There is no report to download on this page. Run the import again to get a new one.';
 $string['exampleaddcsv'] = 'Example CSV (add/del)';
 $string['exampleaddcsv_help'] = 'Download this file, open it with a text or spreadsheet editor, and edit the '
     . 'operation/username/cohortidnumber values to match your own add/del rows before uploading it.';
@@ -65,6 +66,7 @@ $string['standardise_usernames'] = 'Standardise usernames (trim + lowercase)';
 $string['status_added'] = 'Added';
 $string['status_alreadymember'] = 'Already a member';
 $string['status_cohortambiguous'] = 'Cohort idnumber is ambiguous (used by more than one cohort)';
+$string['status_cohortnopermission'] = 'You may not assign members to this cohort';
 $string['status_cohortnotfound'] = 'Cohort not found';
 $string['status_duplicate'] = 'Duplicate in file';
 $string['status_invalid'] = 'Invalid data';

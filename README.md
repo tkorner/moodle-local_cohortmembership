@@ -119,6 +119,31 @@ to apply. The report and the CSV download both show `operation`, `status`
 and whether cohort-sync was affected per row; a summary line counts
 removals with a cohort-sync warning.
 
+### From a course category
+
+Category managers without site-level rights can use the plugin for their
+own category: open the category, then **More → Cohort Membership** (next to
+core's "Cohorts"). The page works exactly like the site-level one, restricted
+to that category:
+
+- Only cohorts in this category or one of its subcategories are visible.
+  Any other cohort - system-level or in another category - is reported as
+  "Cohort not found", so the report reveals nothing about cohorts elsewhere.
+  An idnumber reused by a cohort in another category therefore does not make
+  the cohort in this category ambiguous.
+- A visible cohort is only changed where the user holds `moodle/cohort:assign`
+  in the cohort's own context (a prohibit on a subcategory is honoured, as in
+  core); otherwise the row says "You may not assign members to this cohort".
+- For `sync`, cohorts that are not found or not permitted never join the file
+  universe, so a sync run from a category can never remove a membership
+  outside it.
+- Hidden categories are only reachable for users who may see them.
+- Users are matched site-wide, as in core's own "Assign" cohort page.
+
+The menu entry appears for users holding both `local/cohortmembership:manage`
+and `moodle/cohort:assign` in the category; by default that is the Manager
+role assigned at category level.
+
 ## CLI
 
 Two scripts are provided:
@@ -157,7 +182,7 @@ display it and offer the CSV download. It implements
 
 ## Install
 
-Requirements: Moodle 4.5 LTS, 5.0-5.2 or 5.3 LTS, PHP 8.1-8.4 (see
+Requirements: Moodle 5.0-5.2 or 5.3 LTS, PHP 8.2-8.4 (see
 [Compatibility](#compatibility)).
 
 1. Get the code:
@@ -172,12 +197,16 @@ Requirements: Moodle 4.5 LTS, 5.0-5.2 or 5.3 LTS, PHP 8.1-8.4 (see
    `local/cohortmembership:manage` capability (core's `moodle/cohort:assign`
    is required in addition). To grant access to another role, assign both
    capabilities to it under Site administration → Users → Permissions →
-   Define roles.
-5. Open: Site administration → Plugins → Local plugins → Cohort Membership.
+   Define roles. Both are category-level capabilities, so a Manager assigned
+   to a course category gets the category entry point (see
+   [From a course category](#from-a-course-category)).
+5. Open: Site administration → Plugins → Local plugins → Cohort Membership,
+   or from a course category: More → Cohort Membership.
 
 ## Compatibility
 
-Targets Moodle 4.5 LTS, 5.0-5.2 and 5.3 LTS, PHP 8.1-8.4. Verified by actually
+Targets Moodle 5.0-5.2 and 5.3 LTS, PHP 8.2-8.4. Moodle 4.5 LTS was supported
+up to release 1.1.0; use that release on 4.5 sites. Verified by actually
 installing the plugin against a real checkout of each Moodle 5.x point
 release (not just reading changelogs) and running the full PHPUnit suite
 plus a live CLI smoke test against each:
@@ -201,8 +230,8 @@ includes), so it is unaffected either way.
 ## Tests & CI
 
 This plugin uses [Moodle Plugin CI](https://moodlehq.github.io/moodle-plugin-ci/)
-on GitHub Actions against PHP 8.1-8.4 and Moodle 4.5 LTS, 5.0, 5.1, 5.2 and
-5.3 LTS, on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs),
+on GitHub Actions against PHP 8.2-8.4 and Moodle 5.0, 5.1, 5.2 and 5.3 LTS,
+on MariaDB and PostgreSQL: PHP lint, Moodle coding style (moodle-cs),
 PHPDoc checker, upgrade savepoints, Mustache lint, PHPUnit, and (best-effort)
 Behat.
 

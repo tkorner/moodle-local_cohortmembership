@@ -51,6 +51,8 @@ $string['error_missing_cohort_column'] = 'Fehlende Spalten: erwartet wird eine "
 $string['error_mixed_operations'] = 'Eine Datei muss entweder rein "sync" oder rein "add"/"del" sein, keine '
     . 'Mischung.';
 $string['error_nofile'] = 'Bitte eine CSV-Datei hochladen.';
+$string['error_noreport'] = 'Auf dieser Seite gibt es keinen Report zum Herunterladen. Führen Sie den Import erneut aus, '
+    . 'um einen neuen zu erhalten.';
 $string['exampleaddcsv'] = 'Beispiel-CSV (add/del)';
 $string['exampleaddcsv_help'] = 'Diese Datei herunterladen, mit einem Text- oder Tabellenkalkulationsprogramm '
     . 'öffnen und die Werte von operation/username/cohortidnumber vor dem Hochladen an die eigenen add/del-Zeilen '
@@ -77,6 +79,7 @@ $string['standardise_usernames'] = 'Nutzernamen normalisieren (Leerzeichen entfe
 $string['status_added'] = 'Hinzugefügt';
 $string['status_alreadymember'] = 'Bereits Mitglied';
 $string['status_cohortambiguous'] = 'Globale-Gruppen-ID ist mehrdeutig (mehr als eine Gruppe verwendet sie)';
+$string['status_cohortnopermission'] = 'Sie dürfen dieser globalen Gruppe keine Mitglieder zuweisen';
 $string['status_cohortnotfound'] = 'Globale Gruppe nicht gefunden';
 $string['status_duplicate'] = 'Duplikat in der Datei';
 $string['status_invalid'] = 'Ungültige Daten';

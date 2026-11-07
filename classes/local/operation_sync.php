@@ -36,7 +36,7 @@ final class operation_sync {
      *
      * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
      *                            'operation' => string, 'cohortid_invalid' => bool|null]
-     * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
+     * @param array $options Options: ['standardise' => bool, 'dryrun' => bool, 'scope' => \context_coursecat|null]
      * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool]
      */
     public static function process(array $rows, array $options = []): array {
@@ -46,8 +46,13 @@ final class operation_sync {
         $standardise = !empty($options['standardise']);
         $dryrun      = !empty($options['dryrun']);
 
+        $scope       = $options['scope'] ?? null;
+        if ($scope !== null && !($scope instanceof \context_coursecat)) {
+            throw new \coding_exception('The scope option must be a context_coursecat or null.');
+        }
+
         $cohortcache = [];
-        [$parsed, $universe] = self::parse_rows($rows, $standardise, $cohortcache);
+        [$parsed, $universe] = self::parse_rows($rows, $standardise, $cohortcache, $scope);
 
         // Group by username, preserving each row's original position within its group.
         $groups = [];
@@ -76,19 +81,22 @@ final class operation_sync {
      * all cohorts that resolve anywhere in the file is the "universe" -
      * computed unconditionally, before we know whether each row's user exists.
      * An ambiguous cohort idnumber is never guessed at, so it never joins the
-     * universe (SPEC §10: "nicht raten").
+     * universe (SPEC §10: "nicht raten"). Neither does a cohort outside the
+     * run's category scope (resolved as not found) or one the user may not
+     * assign, so sync can never remove a membership there.
      *
      * @param array $rows
      * @param bool $standardise
      * @param array $cohortcache Memoisation cache for cohort_resolver, shared across all rows in this run.
+     * @param \context_coursecat|null $scope Category the run is restricted to, or null.
      * @return array [array $parsed, array $universe] universe is cohortid => true.
      */
-    private static function parse_rows(array $rows, bool $standardise, array &$cohortcache): array {
+    private static function parse_rows(array $rows, bool $standardise, array &$cohortcache, ?\context_coursecat $scope): array {
         $parsed   = [];
         $universe = [];
 
         foreach ($rows as $r) {
-            $parsed[] = self::parse_row($r, $standardise, $cohortcache, $universe);
+            $parsed[] = self::parse_row($r, $standardise, $cohortcache, $universe, $scope);
         }
 
         return [$parsed, $universe];
@@ -102,9 +110,16 @@ final class operation_sync {
      * @param bool $standardise
      * @param array $cohortcache Memoisation cache for cohort_resolver.
      * @param array $universe cohortid => true, built up across all rows.
+     * @param \context_coursecat|null $scope Category the run is restricted to, or null.
      * @return array A parsed entry (see parse_rows()).
      */
-    private static function parse_row(array $r, bool $standardise, array &$cohortcache, array &$universe): array {
+    private static function parse_row(
+        array $r,
+        bool $standardise,
+        array &$cohortcache,
+        array &$universe,
+        ?\context_coursecat $scope
+    ): array {
         $username = isset($r['username']) ? trim((string)$r['username']) : '';
         if ($standardise && $username !== '') {
             $username = \core_text::strtolower($username);
@@ -118,12 +133,15 @@ final class operation_sync {
         $invalid = $cohortidmalformed || $username === ''
             || ($cohortidin === null && ($cohortidnumberin === null || $cohortidnumberin === ''));
 
-        $cohortid  = null;
-        $ambiguous = false;
+        $cohortid     = null;
+        $ambiguous    = false;
+        $nopermission = false;
         if (!$invalid) {
-            $resolved = cohort_resolver::resolve($cohortidin, $cohortidnumberin, $cohortcache);
+            $resolved = cohort_resolver::resolve($cohortidin, $cohortidnumberin, $cohortcache, $scope);
             if ($resolved['status'] === 'ambiguous') {
                 $ambiguous = true;
+            } else if ($resolved['status'] === 'nopermission') {
+                $nopermission = true;
             } else if ($resolved['status'] === 'found') {
                 $cohortid = $resolved['id'];
                 $universe[$cohortid] = true;
@@ -136,6 +154,7 @@ final class operation_sync {
             'cohortidnumber_in' => $cohortidnumberin,
             'invalid'           => $invalid,
             'ambiguous'         => $ambiguous,
+            'nopermission'      => $nopermission,
             'cohortid'          => $cohortid,
         ];
     }
@@ -192,7 +211,7 @@ final class operation_sync {
     }
 
     /**
-     * Split one user's rows into structurally invalid/ambiguous (reported
+     * Split one user's rows into structurally invalid/ambiguous/not-permitted (reported
      * immediately) and valid (returned for further processing).
      *
      * @param string $username
@@ -211,6 +230,10 @@ final class operation_sync {
                 $counters['skipped']++;
             } else if ($entry['ambiguous']) {
                 $results[] = self::rowresult($username, $entry, 'status_cohortambiguous');
+                $counters['errors']++;
+                $counters['skipped']++;
+            } else if ($entry['nopermission']) {
+                $results[] = self::rowresult($username, $entry, 'status_cohortnopermission');
                 $counters['errors']++;
                 $counters['skipped']++;
             } else {

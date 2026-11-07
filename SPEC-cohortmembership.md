@@ -1,7 +1,7 @@
 # Spec: `local_cohortmembership` — Cohort Membership Uploader
 
 **Autor:** Thomas Korner (tkorner)
-**Ziel-Moodle:** 4.5 LTS + 5.x (aktuell getestet auf 5.0.8)
+**Ziel-Moodle:** 5.0 – 5.3 LTS (ab 1.2.0; 4.5 LTS bis 1.1.0)
 **Ausgangsbasis:** bestehendes Plugin `local_cohortunenroller` (nur `del` via CSV, UI + CLI, Dry-run, Report)
 **Auftrag:** Erweiterung um Operationen `add` und `sync` über eine `operation`-Spalte, ohne die bestehende `del`-Funktionalität zu brechen.
 
@@ -267,3 +267,54 @@ Bei offenem MDL-61007 besteht echter Community-Bedarf. Für die Einreichung nöt
 - PHPUnit grün, Moodle CI grün (PHP-Lint, moodle-cs Codestyle, Behat optional).
 - Privacy-API (`\core_privacy\...\null_provider` reicht, da keine eigenen personenbezogenen Daten gespeichert werden — Report liegt nur in Session).
 - Verweis auf MDL-61007 im Einreichungstext als Bedarfsnachweis.
+
+---
+
+## 13. Einstieg auf Kategorie-Ebene (ab 1.2.0)
+
+**Zweck:** Personen mit Manager-Rolle in einem Kursbereich, aber ohne
+Systemrechte, können das Plugin für die Kohorten ihres Bereichs nutzen.
+
+**Einstieg:** `index.php?contextid=<Kategoriekontext>`, verlinkt im „Mehr“-Menü
+der Kategorie (`local_cohortmembership_extend_navigation_category_settings`
+in `lib.php`). Ohne `contextid` bleibt die Seite die bisherige Admin-Seite
+(Systemkontext, unverändert). Andere Kontextebenen → `invalidcontext`.
+
+**Berechtigung:**
+- Einstieg: `local/cohortmembership:manage` **und** `moodle/cohort:assign` im
+  Kategoriekontext. Die Plugin-Capability ist dafür `CONTEXT_COURSECAT`
+  (vorher `CONTEXT_SYSTEM`).
+- Pro Kohorte: `moodle/cohort:assign` im **Kontext der Kohorte**, wie Core in
+  `cohort/assign.php`. Ein Prohibit in einer Unterkategorie greift also.
+
+**Bereich (`scope`):** Kohorten der Kategorie selbst und aller Unterkategorien,
+geprüft in `cohort_resolver::resolve()` mit `context::is_child_of()`.
+- Kohorten ausserhalb des Bereichs (Systemkohorten, andere Kategorien) sind
+  **unsichtbar**: Sie werden vor der Mehrdeutigkeitsprüfung herausgefiltert
+  und als `status_cohortnotfound` gemeldet. So verrät der Report nichts über
+  Kohorten anderswo, und eine `idnumber`, die in einer fremden Kategorie
+  nochmals vorkommt, blockiert die eigene Kohorte nicht. Mehrdeutig ist eine
+  `idnumber` nur noch, wenn sie innerhalb des Bereichs mehrfach vorkommt.
+- Sichtbare Kohorte ohne `moodle/cohort:assign` in ihrem Kontext →
+  `status_cohortnopermission`, Fehlerzeile, keine Änderung.
+
+**Sync:** Nicht gefundene und nicht erlaubte Kohorten kommen nicht ins
+Universum. Damit gilt die Formel aus §6 unverändert, und ein Sync aus einer
+Kategorie kann nie eine Mitgliedschaft ausserhalb davon entfernen.
+
+**Sichtbarkeit:** Die Kategorie muss für die Person sichtbar sein
+(`core_course_category::get()`), versteckte Kategorien also nur mit
+`moodle/category:viewhiddencategories`.
+
+**Bewusst unverändert:**
+- User-Matching ist site-weit, wie in Core beim Zuweisen zu einer Kohorte.
+- CLI bleibt unbeschränkt (Systemkontext).
+
+**Report:** Wird mit der `contextid` gespeichert und nur auf der Seite
+angezeigt bzw. heruntergeladen, auf der er entstanden ist.
+
+**Tests:** `tests/category_scope_test.php` (Kategorie + Unterkategorie
+erlaubt, System- und Geschwisterkohorte als nicht gefunden, Prohibit in
+Unterkategorie, Sync entfernt nichts ausserhalb, fremde gleiche `idnumber`
+nicht mehrdeutig, falscher Scope-Typ früh abgelehnt, unbeschränkter Lauf
+unverändert, Navigationseintrag nur mit beiden Capabilities).

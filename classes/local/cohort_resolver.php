@@ -32,6 +32,14 @@ namespace local_cohortmembership\local;
  * idnumber is never guessed at (SPEC §10: "nicht raten") - it is reported
  * back as ambiguous so the caller can produce a status_cohortambiguous row
  * instead of silently writing to an arbitrary matching cohort.
+ *
+ * When a run is restricted to a course category (a category manager working
+ * from the category's own entry point), cohorts outside that category's
+ * subtree are invisible: they count as 'notfound' and are filtered out before
+ * the ambiguity check, so the report reveals nothing about cohorts elsewhere
+ * and an idnumber reused in another category does not block an in-scope
+ * cohort. A cohort inside the subtree where the current user lacks
+ * moodle/cohort:assign is reported as 'nopermission' and never touched.
  */
 final class cohort_resolver {
     /**
@@ -41,9 +49,11 @@ final class cohort_resolver {
      * @param int|null $id Numeric cohort id, or null to resolve by idnumber.
      * @param string|null $idnumber Cohort idnumber, used only when $id is null.
      * @param array $cache Memoisation cache; pass the same array by reference for a whole run.
-     * @return array ['status' => 'found'|'notfound'|'ambiguous', 'id' => int|null]
+     * @param \context_coursecat|null $scope Category the run is restricted to, or null for an unrestricted
+     *                                       (site-level) run. Must stay the same for every call sharing $cache.
+     * @return array ['status' => 'found'|'notfound'|'ambiguous'|'nopermission', 'id' => int|null]
      */
-    public static function resolve(?int $id, ?string $idnumber, array &$cache): array {
+    public static function resolve(?int $id, ?string $idnumber, array &$cache, ?\context_coursecat $scope = null): array {
         global $DB;
 
         $key = $id !== null ? ('id:' . $id) : ('idn:' . $idnumber);
@@ -52,20 +62,41 @@ final class cohort_resolver {
         }
 
         if ($id !== null) {
-            $cohort = $DB->get_record('cohort', ['id' => $id], 'id', IGNORE_MISSING);
-            $result = $cohort ? ['status' => 'found', 'id' => (int)$cohort->id] : ['status' => 'notfound', 'id' => null];
+            $cohort = $DB->get_record('cohort', ['id' => $id], 'id, contextid', IGNORE_MISSING);
+            $matches = $cohort ? [$cohort] : [];
         } else {
-            $matches = $DB->get_records('cohort', ['idnumber' => $idnumber], '', 'id');
-            if (count($matches) > 1) {
-                $result = ['status' => 'ambiguous', 'id' => null];
-            } else if ($matches) {
-                $result = ['status' => 'found', 'id' => (int)reset($matches)->id];
-            } else {
-                $result = ['status' => 'notfound', 'id' => null];
-            }
+            $matches = $DB->get_records('cohort', ['idnumber' => $idnumber], '', 'id, contextid');
+        }
+        if ($scope !== null) {
+            $matches = array_filter($matches, fn($cohort) => self::in_subtree((int)$cohort->contextid, $scope));
+        }
+
+        if (count($matches) > 1) {
+            $result = ['status' => 'ambiguous', 'id' => null];
+        } else if (!$matches) {
+            $result = ['status' => 'notfound', 'id' => null];
+        } else {
+            $cohort = reset($matches);
+            $result = $scope !== null && !has_capability('moodle/cohort:assign', \context::instance_by_id($cohort->contextid))
+                ? ['status' => 'nopermission', 'id' => null]
+                : ['status' => 'found', 'id' => (int)$cohort->id];
         }
 
         $cache[$key] = $result;
         return $result;
+    }
+
+    /**
+     * Whether a cohort context is the scope category itself or lies below it.
+     * The capability is checked separately, in the cohort's own context as
+     * core's cohort/assign.php does, so a prohibit on a subcategory is honoured.
+     *
+     * @param int $contextid The cohort's contextid.
+     * @param \context_coursecat $scope
+     * @return bool
+     */
+    private static function in_subtree(int $contextid, \context_coursecat $scope): bool {
+        $context = \context::instance_by_id($contextid, IGNORE_MISSING);
+        return $context && $context->is_child_of($scope, true);
     }
 }

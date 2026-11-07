@@ -27,11 +27,44 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->libdir . '/csvlib.class.php');
 require_once($CFG->dirroot . '/cohort/lib.php');
 
-// Sets up require_login() plus the capability check for 'local/cohortmembership:manage'
-// declared in settings.php, plus the admin breadcrumb/nav highlighting a manual
-// require_login()/set_url() never gets.
-admin_externalpage_setup('local_cohortmembership');
-$context = context_system::instance();
+// Two entry points share this page: the site-level admin page (no contextid) and
+// a course category's own page (contextid of the category), reached from the
+// category's "More" menu, for category managers without site-level rights.
+$contextid = optional_param('contextid', 0, PARAM_INT);
+$context = $contextid ? context::instance_by_id($contextid, MUST_EXIST) : context_system::instance();
+
+if ($context->contextlevel == CONTEXT_SYSTEM) {
+    // Sets up require_login() plus the capability check for 'local/cohortmembership:manage'
+    // declared in settings.php, plus the admin breadcrumb/nav highlighting a manual
+    // require_login()/set_url() never gets.
+    admin_externalpage_setup('local_cohortmembership');
+    $scope = null;
+    $baseurl = new moodle_url('/local/cohortmembership/index.php');
+    $cancelurl = new moodle_url('/admin/search.php', ['query' => 'Cohort Membership']);
+} else if ($context->contextlevel == CONTEXT_COURSECAT) {
+    require_login();
+    // Throws for a category the user cannot see (e.g. hidden without viewhiddencategories),
+    // as core's own category pages do.
+    core_course_category::get($context->instanceid);
+    $baseurl = new moodle_url('/local/cohortmembership/index.php', ['contextid' => $context->id]);
+    $PAGE->set_context($context);
+    $PAGE->set_url($baseurl);
+    $PAGE->set_pagelayout('admin');
+    // Category name as page heading, category active in the navigation (as core's cohort/index.php).
+    core_course_category::page_setup();
+    if ($node = $PAGE->settingsnav->find('local_cohortmembership', navigation_node::TYPE_SETTING)) {
+        $node->make_active();
+    }
+    require_capability('local/cohortmembership:manage', $context);
+    // Restricts every row to cohorts in this category or below (see cohort_resolver).
+    $scope = $context;
+    // Back to core's cohort list where the user may open it, else to the category itself.
+    $cancelurl = has_any_capability(['moodle/cohort:view', 'moodle/cohort:manage'], $context)
+        ? new moodle_url('/cohort/index.php', ['contextid' => $context->id])
+        : new moodle_url('/course/index.php', ['categoryid' => $context->instanceid]);
+} else {
+    throw new moodle_exception('invalidcontext');
+}
 require_capability('moodle/cohort:assign', $context);
 
 // Handle secure CSV download of the last run's results (stored in a per-session
@@ -42,7 +75,7 @@ if ($download) {
     require_sesskey(); // CSRF protection for the download action.
 
     $stored = \local_cohortmembership\local\report_store::load(sesskey());
-    if ($stored !== null) {
+    if ($stored !== null && ($stored['contextid'] ?? null) === $context->id) {
         $export = new csv_export_writer();
         $export->set_filename('cohort_membership_results');
         $export->add_data(['username', 'cohortid', 'cohortidnumber', 'operation', 'status', 'cohortsyncwarning']);
@@ -62,13 +95,19 @@ if ($download) {
         $export->download_file();
         exit;
     }
+    // Nothing to download for this page (already downloaded, expired, or produced on the
+    // other entry point): say so below instead of silently showing the empty form.
+    $reportmissing = true;
 }
 
 $PAGE->set_title(get_string('pluginname', 'local_cohortmembership'));
-// Heading is left empty here and printed below via heading_with_help() instead: set_heading()
-// sanitises its argument (format_string()/clean_text()), which strips the data-bs-* attributes
-// the help icon's popover needs, silently turning it into a non-interactive icon.
-$PAGE->set_heading('');
+if ($scope === null) {
+    // Heading is left empty here and printed below via heading_with_help() instead: set_heading()
+    // sanitises its argument (format_string()/clean_text()), which strips the data-bs-* attributes
+    // the help icon's popover needs, silently turning it into a non-interactive icon. On a category
+    // page the heading stays the category name set by core_course_category::page_setup().
+    $PAGE->set_heading('');
+}
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading_with_help(
@@ -76,13 +115,17 @@ echo $OUTPUT->heading_with_help(
     'pluginname',
     'local_cohortmembership'
 );
+if (!empty($reportmissing)) {
+    echo $OUTPUT->notification(get_string('error_noreport', 'local_cohortmembership'), 'warning');
+}
 
 // Load the upload form (namespaced moodleform subclass).
-$mform = new \local_cohortmembership\form\upload_form();
+// Explicit action: the default strips the query string and would lose contextid on submit.
+$mform = new \local_cohortmembership\form\upload_form($baseurl);
 
 // Standard moodleform flow.
 if ($mform->is_cancelled()) {
-    redirect(new moodle_url('/admin/search.php?query=Cohort%20Membership'));
+    redirect($cancelurl);
 } else if ($data = $mform->get_data()) {
     // Form includes sesskey; still enforce explicitly for clarity.
     require_sesskey();
@@ -164,6 +207,7 @@ if ($mform->is_cancelled()) {
     $payload = \local_cohortmembership\local\processor::process($rows, [
         'standardise' => $standardise,
         'dryrun' => $dryrun,
+        'scope' => $scope,
     ]);
 
     // A file-level validation failure means nothing was processed at all.
@@ -201,15 +245,18 @@ if ($mform->is_cancelled()) {
         'legacy_format' => $payload['legacy_format'],
         'cohortidnumber_ignored' => $payload['cohortidnumber_ignored'],
         'dryrun' => $dryrun,
+        // A report is only shown and downloaded on the page that produced it.
+        'contextid' => $context->id,
     ]);
 
     // Post/Redirect/Get: without this, refreshing the browser after a live run
     // would resubmit the form and re-run the import (sync would re-run its
     // implicit removals, every event re-fires). Render from the stored report instead.
-    redirect(new moodle_url('/local/cohortmembership/index.php', ['report' => 1]));
+    redirect(new moodle_url($baseurl, ['report' => 1]));
 } else if (
     optional_param('report', 0, PARAM_BOOL)
         && ($stored = \local_cohortmembership\local\report_store::load(sesskey()))
+        && ($stored['contextid'] ?? null) === $context->id
 ) {
     // Rendering the outcome of the run that redirected here.
 
@@ -228,12 +275,9 @@ if ($mform->is_cancelled()) {
     echo $renderer->report(new \local_cohortmembership\output\report($stored['rows'], $stored['counters']));
 
     // Download button (protected by sesskey) and back-to-upload button.
-    $dlurl = new moodle_url('/local/cohortmembership/index.php', ['download' => 1, 'sesskey' => sesskey()]);
+    $dlurl = new moodle_url($baseurl, ['download' => 1, 'sesskey' => sesskey()]);
     echo $OUTPUT->single_button($dlurl, get_string('download', 'local_cohortmembership'));
-    echo $OUTPUT->single_button(
-        new moodle_url('/local/cohortmembership/index.php'),
-        get_string('uploadcsv', 'local_cohortmembership')
-    );
+    echo $OUTPUT->single_button($baseurl, get_string('uploadcsv', 'local_cohortmembership'));
 } else {
     // First page load: show the upload form.
     $mform->display();

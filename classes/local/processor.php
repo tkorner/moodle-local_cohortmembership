@@ -42,13 +42,21 @@ class processor {
      *
      * @param array $rows Each: ['username' => string, 'cohortid' => int|null, 'cohortidnumber' => string|null,
      *                            'operation' => string|null, 'cohortid_invalid' => bool|null]
-     * @param array $options Options: ['standardise' => bool, 'dryrun' => bool]
+     * @param array $options Options: ['standardise' => bool, 'dryrun' => bool,
+     *                       'scope' => \context_coursecat|null]. With a scope, only cohorts in that
+     *                       category (or below) are visible, and only those the current user may
+     *                       assign are touched (see cohort_resolver).
      * @return array ['results' => array, 'counters' => array, 'legacy_format' => bool,
      *                 'cohortidnumber_ignored' => bool, 'validation_error' => string|null]
      */
     public static function process(array $rows, array $options = []): array {
         global $CFG;
         require_once($CFG->dirroot . '/cohort/lib.php');
+
+        // Fail before any transaction starts, not with a TypeError halfway through a live run.
+        if (isset($options['scope']) && !($options['scope'] instanceof \context_coursecat)) {
+            throw new \coding_exception('The scope option must be a context_coursecat or null.');
+        }
 
         if (!$rows) {
             return self::rejected($rows, false, 'error_empty_file');
@@ -164,6 +172,7 @@ class processor {
 
         $standardise = !empty($options['standardise']);
         $dryrun      = !empty($options['dryrun']);
+        $scope       = $options['scope'] ?? null;
 
         $seenpairs   = [];
         $usercache   = [];
@@ -196,7 +205,7 @@ class processor {
             }
             $seenpairs[$pairkey] = true;
 
-            $outcome = self::resolve_and_dispatch($row, $usercache, $cohortcache, $dryrun);
+            $outcome = self::resolve_and_dispatch($row, $usercache, $cohortcache, $dryrun, $scope);
             $row['cohortid'] = $outcome['cohortid'];
             $status = $outcome['status'];
             $results[] = self::deltarow($row, $status, $outcome['cohortsync_warning'] ?? false);
@@ -208,7 +217,7 @@ class processor {
                 $counters['valid']++;
                 $counters['skipped']++;
             } else {
-                // Covers usernotfound, cohortnotfound, cohortambiguous, error_bad_operation.
+                // Covers usernotfound, cohortnotfound, cohortambiguous, cohortnopermission, error_bad_operation.
                 $counters['errors']++;
                 $counters['skipped']++;
             }
@@ -263,9 +272,16 @@ class processor {
      * @param array $usercache Memoisation cache for username -> userid|false.
      * @param array $cohortcache Memoisation cache for cohort_resolver.
      * @param bool $dryrun
+     * @param \context_coursecat|null $scope Category the run is restricted to, or null.
      * @return array ['status' => string, 'cohortid' => int|null, 'cohortsync_warning' => bool]
      */
-    private static function resolve_and_dispatch(array $row, array &$usercache, array &$cohortcache, bool $dryrun): array {
+    private static function resolve_and_dispatch(
+        array $row,
+        array &$usercache,
+        array &$cohortcache,
+        bool $dryrun,
+        ?\context_coursecat $scope
+    ): array {
         global $DB;
 
         $username = $row['username'];
@@ -278,9 +294,12 @@ class processor {
             return ['status' => 'status_usernotfound', 'cohortid' => $row['cohortid']];
         }
 
-        $cohort = cohort_resolver::resolve($row['cohortid'], $row['cohortidnumber'], $cohortcache);
+        $cohort = cohort_resolver::resolve($row['cohortid'], $row['cohortidnumber'], $cohortcache, $scope);
         if ($cohort['status'] === 'ambiguous') {
             return ['status' => 'status_cohortambiguous', 'cohortid' => $row['cohortid']];
+        }
+        if ($cohort['status'] === 'nopermission') {
+            return ['status' => 'status_cohortnopermission', 'cohortid' => $row['cohortid']];
         }
         if ($cohort['status'] === 'notfound') {
             return ['status' => 'status_cohortnotfound', 'cohortid' => $row['cohortid']];

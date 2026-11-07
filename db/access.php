@@ -19,7 +19,9 @@
  *
  * Defines the custom capability 'local/cohortmembership:manage'.
  * This allows controlling which roles are permitted to run the plugin.
- * By default, the Manager role is granted this capability.
+ * By default, the Manager role is granted this capability. Category level, so a
+ * manager assigned to a course category can use the plugin for that category's
+ * cohorts (alongside core's moodle/cohort:assign, which is also category level).
  *
  * @package   local_cohortmembership
  * @copyright Thomas Korner <thomas.korner@edu.zh.ch>
@@ -32,7 +34,7 @@ $capabilities = [
     'local/cohortmembership:manage' => [
         'riskbitmask'  => RISK_DATALOSS,
         'captype'      => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
+        'contextlevel' => CONTEXT_COURSECAT,
         'archetypes'   => [
             'manager' => CAP_ALLOW,
         ],
